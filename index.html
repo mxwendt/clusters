@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+  <title>Walker</title>
+  <link rel="stylesheet" href="node_modules/google-code-prettify/bin/prettify.min.css">
+  <link rel="stylesheet" href="main.css">
+</head>
+<body>
+  <pre id="code" class="default linenums prettyprint">
+    /**
+     * @cluster
+     * @param {Number} size [0, 10] = 8
+     * @return {Array} result
+     */
+    function fibonacci(size) {
+      var first = 0;
+      var second = 1;
+      var next;
+      var count = 2;
+      var result = [first, second];
+      if (size < 2) {
+        return 'the request was made but it was not good';
+      }
+      while (count++ < size) {
+        next = first + second;
+        first = second;
+        second = next;
+        result.push(next);
+      }
+      return result;
+    }
+  </pre>
+  <script type="text/javascript" src="node_modules/js-beautify/js/lib/beautify.js" charset="utf-8"></script>
+  <script type="text/javascript" src="node_modules/js-beautify/js/lib/beautify.js" charset="utf-8"></script>
+  <script type="text/javascript" src="node_modules/google-code-prettify/bin/prettify.min.js" charset="utf-8"></script>
+  <script type="text/javascript" src="node_modules/acorn/dist/acorn.js" charset="utf-8"></script>
+  <script type="text/javascript" src="node_modules/acorn/dist/walk.js" charset="utf-8"></script>
+  <script type="text/javascript" src="node_modules/d3/d3.js" charset="utf-8"></script>
+  <script type="text/javascript" src="src/main.js" charset="utf-8"></script>
+</body>
+</html>

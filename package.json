@@ -1,0 +1,25 @@
+{
+  "name": "clusters",
+  "version": "0.0.1",
+  "description": "I tried to picture clusters of information as they move through the computer. What do they look like? The state. The execution. The behavior. I kept dreaming of a world I thought I'd never see. And then, one day ... I visualized it.",
+  "main": "main.js",
+  "dependencies": {
+    "acorn": "^3.1.0",
+    "d3": "^3.5.17",
+    "google-code-prettify": "^1.0.1",
+    "js-beautify": "^1.6.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mxwendt/clusters.git"
+  },
+  "keywords": [
+    "code",
+    "visualization"
+  ],
+  "author": "mxwendt",
+  "bugs": {
+    "url": "https://github.com/mxwendt/clusters/issues"
+  },
+  "homepage": "https://github.com/mxwendt/clusters#readme"
+}
