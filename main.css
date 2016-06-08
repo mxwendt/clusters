@@ -2,8 +2,8 @@
 Wrapper
 ------------------------------------------------------------------------------*/
 
-code {
-  display: block;
+.snippet {
+  margin-top: 30px;
 }
 
 .code, .data, .state {
@@ -210,4 +210,52 @@ input.execSlider {
   position: absolute;
   top: -7px;
   left: 3px;
+}
+
+/*------------------------------------------------------------------------------
+State
+------------------------------------------------------------------------------*/
+
+.state > ol {
+  padding-left: 0;
+  margin: 0 0 5px 10px;
+  font-family: monospace;
+  list-style: none;
+}
+
+.state > ol > li {
+  display: block;
+  min-height: 20px;
+  margin: 0;
+  line-height: 16px;
+}
+
+.state > ol > li > span {
+  display: inline-block;
+}
+
+.state > ol > li > input,
+.state > ol > li > select {
+  display: inline-block;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+.stateProps,
+.stateParams,
+.stateValues {
+  padding-bottom: 5px;
+  border-bottom: 1px solid black;
+}
+
+.stateParams:last-child,
+.stateValues:last-child,
+.stateReturns:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.stateVal {
+  display: inline-block;
+  font-weight: bold;
 }

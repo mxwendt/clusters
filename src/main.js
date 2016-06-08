@@ -86,7 +86,6 @@ Environment.prototype.set = function (name, val) {
 
    // let's not allow defining globals from a nested environment
    if (!scope && this.parent) throw new Error('Undefined variable ' + name);
-
    return (scope || this).vars[name] = val;
 }
 
@@ -110,6 +109,20 @@ function Cluster (functionDeclarationNode) {
   // Add params to the environment
   // TODO: Make params dynamic
   this.env.def(functionDeclarationNode.params[0].name, 8);
+  // this.env.def(functionDeclarationNode.params[0].name, "searchengine=http://www.google.com/search?q=$1\n" +
+  //           "spitefulness=9.7\n" +
+  //           "\n" +
+  //           "; comments are preceded by a semicolon...\n" +
+  //           "; each section concerns an individual enemy\n" +
+  //           "[larry]\n" +
+  //           "fullname=Larry Doe\n" +
+  //           "type=kindergarten bully\n" +
+  //           "website=http://www.geocities.com/CapeCanaveral/11451\n" +
+  //           "\n" +
+  //           "[gargamel]\n" +
+  //           "fullname=Gargamel\n" +
+  //           "type=evil sorcerer\n" +
+  //           "outputdir=/home/marijn/enemies/gargamel");
 
   // Go to each statement in the block
   this.iterBlockStatements(functionDeclarationNode.body);
@@ -132,8 +145,12 @@ Cluster.prototype.iter = function (node) {
     case 'IfStatement':
       this.execution.push(node.loc.start.line);
 
-      if (this.evaluate(node.test) === true) {
+      if (this.evaluate(node.test) == true) {
         this.iterBlockStatements(node.consequent);
+      } else if (this.evaluate(node.test) == false) {
+        if (node.alternate !== null) {
+          this.iter(node.alternate);
+        }
       }
 
       // TODO: Implement ELSE consequent
@@ -144,6 +161,23 @@ Cluster.prototype.iter = function (node) {
       while (this.evaluate(node.test) === true) {
         this.execution.push(node.loc.start.line);
         this.iterBlockStatements(node.body);
+      }
+
+      this.execution.push(node.loc.start.line);
+
+      break;
+
+    case 'ForStatement':
+      for (var j = 0; j < node.init.declarations.length; j++) {
+        let name = node.init.declarations[j].id.name;
+        let val = node.init.declarations[j].init === null ? null : this.evaluate(node.init.declarations[j].init);
+        this.env.def(name, val);
+      }
+
+      while (this.evaluate(node.test) === true) {
+        this.execution.push(node.loc.start.line);
+        this.iterBlockStatements(node.body);
+        this.evaluate(node.update);
       }
 
       this.execution.push(node.loc.start.line);
@@ -191,6 +225,17 @@ Cluster.prototype.evaluate = function (node) {
 
       return array;
 
+    case 'ObjectExpression':
+      let obj = {};
+
+      for (var j = 0; j < node.properties.length; j++) {
+        if (node.properties[j].kind === 'init') {
+          obj[node.properties[j].key.name] = this.evaluate(node.properties[j].value);
+        }
+      }
+
+      return obj;
+
     case 'UpdateExpression':
       let updateExprVal = this.env.get(node.argument.name);
       let retVal;
@@ -226,13 +271,22 @@ Cluster.prototype.evaluate = function (node) {
     case 'AssignmentExpression':
       return this.env.set(node.left.name, this.evaluate(node.right));
 
+    case 'MemberExpression':
+      if (node.computed === true) {
+        return this.evaluate(node.object)[this.evaluate(node.property)];
+      } else if (node.computed === false) {
+        return this.evaluate(node.object)[node.property.name];
+      }
+
+      break;
+
     case 'CallExpression':
       if (node.callee.computed === true) { // computed (a[b]) member expression, property is an 'Expression'
         // TODO: Implement computed expression
       } else if (node.callee.computed === false) { // static (a.b) member expression, property is an 'Identifier'
-        let callExprObj = this.env.get(node.callee.object.name);
+        let callExprObj = this.evaluate(node.callee.object);
         let callExprProp = node.callee.property.name;
-        let callExprParams = this.env.get(node.arguments[0].name); // TODO: Allow more than one argument
+        let callExprParams = this.evaluate(node.arguments[0]); // TODO: Allow more than one argument
 
         return callExprObj[callExprProp](callExprParams);
       }
@@ -262,6 +316,9 @@ function Visualizer (parser, walker) {
   this.markupWrapper();
   this.markupCode(this.codeStr);
   this.visualizeExecution();
+  // this.markupStateProps();
+  this.markupStateParams();
+  // this.markupStateValues();
 
   this.ui = new UI(this);
 }
@@ -276,8 +333,12 @@ Visualizer.prototype.markupWrapper = function () {
   this.dataWrapper = document.createElement('div');
   this.dataWrapper.classList.add('data');
 
+  this.stateWrapper = document.createElement('div');
+  this.stateWrapper.classList.add('state');
+
   this.wrapper.appendChild(this.codeWrapper);
   this.wrapper.appendChild(this.dataWrapper);
+  this.wrapper.appendChild(this.stateWrapper);
 
   document.querySelector('body').appendChild(this.wrapper);
 }
@@ -295,6 +356,24 @@ Visualizer.prototype.markupCode = function (codeStr) {
 
   // Pretty print the beautified code (theme copied from Stack Overflow)
   prettyPrint();
+}
+
+Visualizer.prototype.markupStateProps = function () {
+}
+
+Visualizer.prototype.markupStateParams = function () {
+  let params = document.createElement('ol');
+  params.classList.add('stateParams');
+
+  let item = document.createElement('li');
+  item.textContent = 'uses size 8';
+
+  params.appendChild(item);
+
+  this.stateWrapper.appendChild(params);
+}
+
+Visualizer.prototype.markupStateValues = function () {
 }
 
 Visualizer.prototype.visualizeExecution = function () {

@@ -30,6 +30,53 @@
       return result;
     }
   </pre>
+  <!--
+  var ini = "searchengine=http://www.google.com/search?q=$1" +
+            "spitefulness=9.7" +
+            "" +
+            "; comments are preceded by a semicolon..." +
+            "; each section concerns an individual enemy" +
+            "[larry]" +
+            "fullname=Larry Doe" +
+            "type=kindergarten bully" +
+            "website=http://www.geocities.com/CapeCanaveral/11451" +
+            "" +
+            "[gargamel]" +
+            "fullname=Gargamel" +
+            "type=evil sorcerer" +
+            "outputdir=/home/marijn/enemies/gargamel";
+
+  -->
+  <!--pre id="code" class="default linenums prettyprint">
+    /**
+     * @cluster
+     * @param {Number} string => ini
+     * @return {Array} result
+     */
+    function parseINI(string) {
+      var currentSection = {name: null, fields: []};
+      var categories = [currentSection];
+      var lines = string.split(/\r?\n/);
+      var match;
+
+      for (var i = 0; i < lines.length; i++) {
+        if (/^\s*(;.*)?$/.test(lines[i])) {
+          return;
+        } else if (/^\[(.*)\]$/.test(lines[i])) {
+          match = lines[i].match(/^\[(.*)\]$/);
+          currentSection = {name: match[1], fields: []};
+          categories.push(currentSection);
+        } else if (/^(\w+)=(.*)$/.test(lines[i])) {
+          match = lines[i].match(/^(\w+)=(.*)$/);
+          currentSection.fields.push({name: match[1], value: match[2]});
+        } else {
+          throw new Error('Line "' + line + '" is invalid.');
+        }
+      }
+
+      return categories;
+    }
+  </pre-->
   <script type="text/javascript" src="node_modules/js-beautify/js/lib/beautify.js" charset="utf-8"></script>
   <script type="text/javascript" src="node_modules/js-beautify/js/lib/beautify.js" charset="utf-8"></script>
   <script type="text/javascript" src="node_modules/google-code-prettify/bin/prettify.min.js" charset="utf-8"></script>
