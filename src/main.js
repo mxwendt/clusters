@@ -77,20 +77,43 @@ Environment.prototype.lookup = function (name) {
 }
 
 Environment.prototype.get = function (name) {
-  if (name in this.vars) return this.vars[name];
+  if (name in this.vars) return this.vars[name].value;
   throw new Error('Undefined variable ' + name);
 }
 
-Environment.prototype.set = function (name, val) {
+Environment.prototype.getAtStep = function (name, step) {
+  if (name in this.vars) {
+    let retVal;
+    let steps = this.vars[name].steps;
+    for (var i = 0; i < steps.length; i++) {
+      if (steps[i].step <= step) {
+        retVal = steps[i].value;
+      }
+    }
+    return retVal;
+  }
+
+  throw new Error('Undefined variable ' + name);
+}
+
+Environment.prototype.set = function (name, val, step) {
    var scope = this.lookup(name);
 
    // let's not allow defining globals from a nested environment
    if (!scope && this.parent) throw new Error('Undefined variable ' + name);
-   return (scope || this).vars[name] = val;
+
+   let newVal = (scope || this).vars[name].value = val;
+
+   (scope || this).vars[name].steps.push({step: step, value:  val.toString()});
+
+   return newVal;
 }
 
-Environment.prototype.def = function (name, val) {
-  return this.vars[name] = val;
+Environment.prototype.def = function (name, val, step) {
+  let valComp = val;
+  let valStr = val !== null ? val.toString() : 'undefined';
+
+  return this.vars[name] = {value: valComp, steps: [{step: step, value: valStr}]};
 }
 
 /**
@@ -108,7 +131,7 @@ function Cluster (functionDeclarationNode) {
 
   // Add params to the environment
   // TODO: Make params dynamic
-  this.env.def(functionDeclarationNode.params[0].name, 8);
+  this.env.def(functionDeclarationNode.params[0].name, 8, 0);
   // this.env.def(functionDeclarationNode.params[0].name, "searchengine=http://www.google.com/search?q=$1\n" +
   //           "spitefulness=9.7\n" +
   //           "\n" +
@@ -122,7 +145,7 @@ function Cluster (functionDeclarationNode) {
   //           "[gargamel]\n" +
   //           "fullname=Gargamel\n" +
   //           "type=evil sorcerer\n" +
-  //           "outputdir=/home/marijn/enemies/gargamel");
+  //           "outputdir=/home/marijn/enemies/gargamel", 0);
 
   // Go to each statement in the block
   this.iterBlockStatements(functionDeclarationNode.body);
@@ -136,8 +159,8 @@ Cluster.prototype.iter = function (node) {
 
       for (var i = 0; i < node.declarations.length; i++) {
         let name = node.declarations[i].id.name;
-        let val = node.declarations[i].init === null ? null : this.evaluate(node.declarations[i].init);
-        this.env.def(name, val);
+        let val = node.declarations[i].init === null ? null : this.evaluate(node.declarations[i].init, this.execution.length);
+        this.env.def(name, val, this.execution.length);
       }
 
       break;
@@ -170,14 +193,14 @@ Cluster.prototype.iter = function (node) {
     case 'ForStatement':
       for (var j = 0; j < node.init.declarations.length; j++) {
         let name = node.init.declarations[j].id.name;
-        let val = node.init.declarations[j].init === null ? null : this.evaluate(node.init.declarations[j].init);
-        this.env.def(name, val);
+        let val = node.init.declarations[j].init === null ? null : this.evaluate(node.init.declarations[j].init, this.execution.length);
+        this.env.def(name, val, this.execution.length);
       }
 
       while (this.evaluate(node.test) === true) {
         this.execution.push(node.loc.start.line);
         this.iterBlockStatements(node.body);
-        this.evaluate(node.update);
+        this.evaluate(node.update, this.execution.length);
       }
 
       this.execution.push(node.loc.start.line);
@@ -187,12 +210,17 @@ Cluster.prototype.iter = function (node) {
     case 'ExpressionStatement':
       this.execution.push(node.loc.start.line);
 
-      this.evaluate(node.expression);
+      this.evaluate(node.expression, this.execution.length);
 
       break;
 
     case 'ReturnStatement':
       this.execution.push(node.loc.start.line);
+
+      if (node.argument !== null) {
+        let nodeName = node.argument.name;
+        this.env.set(nodeName, this.env.get(nodeName), this.execution.length);
+      }
 
       break;
 
@@ -207,7 +235,7 @@ Cluster.prototype.iterBlockStatements = function (blockStatementsNode) {
   }
 }
 
-Cluster.prototype.evaluate = function (node) {
+Cluster.prototype.evaluate = function (node, step) {
   switch (node.type) {
 
     case 'Literal':
@@ -220,7 +248,7 @@ Cluster.prototype.evaluate = function (node) {
       let array = [];
 
       for (var i = 0; i < node.elements.length; i++) {
-        array.push(this.evaluate(node.elements[i]));
+        array.push(this.evaluate(node.elements[i], step));
       }
 
       return array;
@@ -230,7 +258,7 @@ Cluster.prototype.evaluate = function (node) {
 
       for (var j = 0; j < node.properties.length; j++) {
         if (node.properties[j].kind === 'init') {
-          obj[node.properties[j].key.name] = this.evaluate(node.properties[j].value);
+          obj[node.properties[j].key.name] = this.evaluate(node.properties[j].value, step);
         }
       }
 
@@ -257,25 +285,25 @@ Cluster.prototype.evaluate = function (node) {
         }
       }
 
-      this.env.set(node.argument.name, updateExprVal);
+      this.env.set(node.argument.name, updateExprVal, step);
 
       return retVal;
 
     case 'BinaryExpression':
-      let left = this.evaluate(node.left).toString();
-      let right = this.evaluate(node.right).toString();
+      let left = this.evaluate(node.left, step).toString();
+      let right = this.evaluate(node.right, step).toString();
       let binaryExpr = left + node.operator + right;
 
       return eval(binaryExpr);
 
     case 'AssignmentExpression':
-      return this.env.set(node.left.name, this.evaluate(node.right));
+      return this.env.set(node.left.name, this.evaluate(node.right, step), step);
 
     case 'MemberExpression':
       if (node.computed === true) {
-        return this.evaluate(node.object)[this.evaluate(node.property)];
+        return this.evaluate(node.object)[this.evaluate(node.property, step)];
       } else if (node.computed === false) {
-        return this.evaluate(node.object)[node.property.name];
+        return this.evaluate(node.object, step)[node.property.name];
       }
 
       break;
@@ -284,11 +312,16 @@ Cluster.prototype.evaluate = function (node) {
       if (node.callee.computed === true) { // computed (a[b]) member expression, property is an 'Expression'
         // TODO: Implement computed expression
       } else if (node.callee.computed === false) { // static (a.b) member expression, property is an 'Identifier'
-        let callExprObj = this.evaluate(node.callee.object);
+        let callExprObj = this.evaluate(node.callee.object, step);
         let callExprProp = node.callee.property.name;
-        let callExprParams = this.evaluate(node.arguments[0]); // TODO: Allow more than one argument
+        let callExprParams = this.evaluate(node.arguments[0], step); // TODO: Allow more than one argument
+        let retVal = callExprObj[callExprProp](callExprParams);
 
-        return callExprObj[callExprProp](callExprParams);
+        if (Object.prototype.toString.call(callExprObj) === '[object Array]') {
+          this.env.set(node.callee.object.name, callExprObj, step);
+        }
+
+        return retVal;
       }
 
       break;
@@ -302,6 +335,10 @@ Cluster.prototype.getExecution = function () {
   return this.execution;
 }
 
+Cluster.prototype.getEnv = function () {
+  return this.env;
+}
+
 /**
  * VISUALIZER
  *
@@ -312,13 +349,12 @@ Cluster.prototype.getExecution = function () {
 function Visualizer (parser, walker) {
   this.codeStr = parser.getCodeStr();
   this.execution = walker.getCluster().getExecution();
+  this.env = walker.getCluster().getEnv();
 
   this.markupWrapper();
   this.markupCode(this.codeStr);
   this.visualizeExecution();
-  // this.markupStateProps();
-  this.markupStateParams();
-  // this.markupStateValues();
+  this.markupState();
 
   this.ui = new UI(this);
 }
@@ -358,10 +394,7 @@ Visualizer.prototype.markupCode = function (codeStr) {
   prettyPrint();
 }
 
-Visualizer.prototype.markupStateProps = function () {
-}
-
-Visualizer.prototype.markupStateParams = function () {
+Visualizer.prototype.markupState = function () {
   let params = document.createElement('ol');
   params.classList.add('stateParams');
 
@@ -371,9 +404,55 @@ Visualizer.prototype.markupStateParams = function () {
   params.appendChild(item);
 
   this.stateWrapper.appendChild(params);
-}
 
-Visualizer.prototype.markupStateValues = function () {
+  let self = this;
+
+  this.ractive = new Ractive({
+    el: self.stateWrapper,
+    template:
+      '<ol class="stateParams">' +
+        '<li>uses size {{ params.size.val }}</li>' +
+      '</ol>' +
+      '<ol class="stateValues">' +
+        '<li>sets first to <span class="stateVal">{{ values.first.val }}</span></li>' +
+        '<li>sets second to <span class="stateVal">{{ values.second.val }}</span></li>' +
+        '<li>sets next to <span class="stateVal">{{ values.next.val }}</span></li>' +
+        '<li>sets count to <span class="stateVal">{{ values.count.val }}</span></li>' +
+        '<li>sets result to <span class="stateVal">{{ values.result.val }}</span></li>' +
+      '</ol>' +
+      '<ol class="stateReturns">' +
+        '<li>returns <span class="stateVal">{{ returns.result.val }}</span></li>' +
+      '</ol>',
+    data: {
+      params: {
+        size: {
+          val: self.env.getAtStep('size', 1) // Using 1 gets the initial value
+        }
+      },
+      values: {
+        first: {
+          val: self.env.getAtStep('first', 1)
+        },
+        second: {
+          val: self.env.getAtStep('second', 1)
+        },
+        next: {
+          val: self.env.getAtStep('next', 1)
+        },
+        count: {
+          val: self.env.getAtStep('count', 1)
+        },
+        result: {
+          val: self.env.getAtStep('result', 1)
+        }
+      },
+      returns: {
+        result: {
+          val: self.env.getAtStep('result', 1)
+        }
+      }
+    }
+  });
 }
 
 Visualizer.prototype.visualizeExecution = function () {
@@ -462,6 +541,14 @@ Visualizer.prototype.getDots = function () {
   return this.dots;
 }
 
+Visualizer.prototype.getRactive = function () {
+  return this.ractive;
+}
+
+Visualizer.prototype.getEnvironment = function () {
+  return this.env;
+}
+
 /**
  * UI
  */
@@ -530,11 +617,35 @@ UI.prototype.unhighlightDot = function () {
   });
 }
 
+UI.prototype.updateState = function () {
+  let ractive = this.vis.getRactive();
+  let env = this.vis.getEnvironment();
+  let step = Number(this.execSlider.value) + 1;
+
+  for (var value in ractive.get().values) {
+    // if (ractive.values.hasOwnProperty(value)) {}
+    ractive.set('values.' + value + '.val', env.getAtStep(value, step));
+  }
+
+  if (step === this.vis.getExecution().length) {
+    for (var retVal in ractive.get().returns) {
+      // if (ractive.values.hasOwnProperty(value)) {}
+      ractive.set('returns.' + retVal + '.val', env.getAtStep(retVal, step));
+    }
+  } else {
+    for (var retVal in ractive.get().returns) {
+      // if (ractive.values.hasOwnProperty(value)) {}
+      ractive.set('returns.' + retVal + '.val', '');
+    }
+  }
+}
+
 UI.prototype.onExecutionSliderInput = function (e) {
   e.stopPropagation();
 
   this.highlightLine();
   this.highlightDot();
+  this.updateState();
 }
 
 UI.prototype.getExecSlider = function () {
