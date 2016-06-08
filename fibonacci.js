@@ -176,6 +176,8 @@ Cluster.prototype.iter = function (node) {
         }
       }
 
+      // TODO: Implement ELSE consequent
+
       break;
 
     case 'WhileStatement':
@@ -409,7 +411,7 @@ Visualizer.prototype.markupState = function () {
     el: self.stateWrapper,
     template:
       '<ol class="stateParams">' +
-        '<li>uses size {{ params.size.val }}</li>' +
+        '<li>uses size <span class="stateVal">{{ params.size.val }}</span></li>' +
       '</ol>' +
       '<ol class="stateValues">' +
         '<li>sets first to <span class="stateVal">{{ values.first.val }}</span></li>' +

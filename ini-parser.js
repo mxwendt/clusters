@@ -104,6 +104,8 @@ Environment.prototype.set = function (name, val, step) {
 
    let newVal = (scope || this).vars[name].value = val;
 
+   console.log(newVal);
+
    (scope || this).vars[name].steps.push({step: step, value:  val.toString()});
 
    return newVal;
@@ -130,22 +132,21 @@ function Cluster (functionDeclarationNode) {
   this.execution = [];
 
   // Add params to the environment
-  // TODO: Make params dynamic
-  this.env.def(functionDeclarationNode.params[0].name, 8, 0);
-  // this.env.def(functionDeclarationNode.params[0].name, "searchengine=http://www.google.com/search?q=$1\n" +
-  //           "spitefulness=9.7\n" +
-  //           "\n" +
-  //           "; comments are preceded by a semicolon...\n" +
-  //           "; each section concerns an individual enemy\n" +
-  //           "[larry]\n" +
-  //           "fullname=Larry Doe\n" +
-  //           "type=kindergarten bully\n" +
-  //           "website=http://www.geocities.com/CapeCanaveral/11451\n" +
-  //           "\n" +
-  //           "[gargamel]\n" +
-  //           "fullname=Gargamel\n" +
-  //           "type=evil sorcerer\n" +
-  //           "outputdir=/home/marijn/enemies/gargamel", 0);
+  this.env.def(functionDeclarationNode.params[0].name,
+            // "searchengine=http://www.google.com/search?q=$1\n" +
+            // "spitefulness=9.7\n" +
+            "\n" +
+            "; comments are preceded by a semicolon...\n" +
+            "; each section concerns an individual enemy\n" +
+            "[larry]\n" +
+            // "fullname=Larry Doe\n" +
+            // "type=kindergarten bully\n" +
+            // "website=http://www.geocities.com/CapeCanaveral/11451\n" +
+            "\n" +
+            "[gargamel]\n", 0);// +
+            // "fullname=Gargamel\n" +
+            // "type=evil sorcerer\n" +
+            // "outputdir=/home/marijn/enemies/gargamel", 0);
 
   // Go to each statement in the block
   this.iterBlockStatements(functionDeclarationNode.body);
@@ -217,6 +218,8 @@ Cluster.prototype.iter = function (node) {
 
       if (node.argument !== null) {
         let nodeName = node.argument.name;
+        console.log(nodeName);
+        console.log("ReturnStatement");
         this.env.set(nodeName, this.env.get(nodeName), this.execution.length);
       }
 
@@ -283,6 +286,8 @@ Cluster.prototype.evaluate = function (node, step) {
         }
       }
 
+      console.log(node.argument.name);
+      console.log("UpdateExpression");
       this.env.set(node.argument.name, updateExprVal, step);
 
       return retVal;
@@ -295,6 +300,8 @@ Cluster.prototype.evaluate = function (node, step) {
       return eval(binaryExpr);
 
     case 'AssignmentExpression':
+      console.log(node.left.name);
+      console.log("AssignmentExpression");
       return this.env.set(node.left.name, this.evaluate(node.right, step), step);
 
     case 'MemberExpression':
@@ -316,6 +323,8 @@ Cluster.prototype.evaluate = function (node, step) {
         let retVal = callExprObj[callExprProp](callExprParams);
 
         if (Object.prototype.toString.call(callExprObj) === '[object Array]') {
+          console.log(node.callee.object.name);
+          console.log("CallExpression");
           this.env.set(node.callee.object.name, callExprObj, step);
         }
 
@@ -348,6 +357,8 @@ function Visualizer (parser, walker) {
   this.codeStr = parser.getCodeStr();
   this.execution = walker.getCluster().getExecution();
   this.env = walker.getCluster().getEnv();
+
+  console.log(this.env);
 
   this.markupWrapper();
   this.markupCode(this.codeStr);
@@ -397,7 +408,7 @@ Visualizer.prototype.markupState = function () {
   params.classList.add('stateParams');
 
   let item = document.createElement('li');
-  item.textContent = 'uses size 8';
+  item.textContent = 'uses string 8';
 
   params.appendChild(item);
 
@@ -409,44 +420,53 @@ Visualizer.prototype.markupState = function () {
     el: self.stateWrapper,
     template:
       '<ol class="stateParams">' +
-        '<li>uses size {{ params.size.val }}</li>' +
+        '<li>uses string <span class="stateVal str">"{{{ params.string.val }}}"</span></li>' +
       '</ol>' +
       '<ol class="stateValues">' +
-        '<li>sets first to <span class="stateVal">{{ values.first.val }}</span></li>' +
-        '<li>sets second to <span class="stateVal">{{ values.second.val }}</span></li>' +
-        '<li>sets next to <span class="stateVal">{{ values.next.val }}</span></li>' +
-        '<li>sets count to <span class="stateVal">{{ values.count.val }}</span></li>' +
-        '<li>sets result to <span class="stateVal">{{ values.result.val }}</span></li>' +
+        '<li>sets currentSection to <span class="stateVal">{{ values.currentSection.val }}</span></li>' +
+        '<li>sets categories to <span class="stateVal">{{ values.categories.val }}</span></li>' +
+        '<li>sets lines to <span class="stateVal">{{ values.lines.val }}</span></li>' +
+        '<li>sets match to <span class="stateVal">{{ values.match.val }}</span></li>' +
       '</ol>' +
       '<ol class="stateReturns">' +
-        '<li>returns <span class="stateVal">{{ returns.result.val }}</span></li>' +
+        '<li>returns <span class="stateVal">{{ returns.categories.val }}</span></li>' +
       '</ol>',
     data: {
       params: {
-        size: {
-          val: self.env.getAtStep('size', 1) // Using 1 gets the initial value
+        string: {
+          val: "searchengine=http://www.google.com/search?q=$1<br>" +
+                "spitefulness=9.7<br>" +
+                "<br>" +
+                "; comments are preceded by a semicolon...<br>" +
+                "; each section concerns an individual enemy<br>" +
+                "[larry]<br>" +
+                "fullname=Larry Doe<br>" +
+                "type=kindergarten bully<br>" +
+                "website=http://www.geocities.com/CapeCanaveral/11451<br>" +
+                "<br>" +
+                "[gargamel]<br>" +
+                "fullname=Gargamel<br>" +
+                "type=evil sorcerer<br>" +
+                "outputdir=/home/marijn/enemies/gargamel"
         }
       },
       values: {
-        first: {
-          val: self.env.getAtStep('first', 1)
+        currentSection: {
+          val: self.env.getAtStep('currentSection', 1)
         },
-        second: {
-          val: self.env.getAtStep('second', 1)
+        categories: {
+          val: self.env.getAtStep('categories', 1)
         },
-        next: {
-          val: self.env.getAtStep('next', 1)
+        lines: {
+          val: self.env.getAtStep('lines', 1)
         },
-        count: {
-          val: self.env.getAtStep('count', 1)
-        },
-        result: {
-          val: self.env.getAtStep('result', 1)
+        match: {
+          val: self.env.getAtStep('match', 1)
         }
       },
       returns: {
-        result: {
-          val: self.env.getAtStep('result', 1)
+        categories: {
+          val: self.env.getAtStep('categories', 1)
         }
       }
     }

@@ -258,4 +258,5 @@ State
 .stateVal {
   display: inline-block;
   font-weight: bold;
+  vertical-align: top;
 }
