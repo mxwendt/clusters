@@ -104,18 +104,54 @@ Environment.prototype.set = function (name, val, step) {
 
    let newVal = (scope || this).vars[name].value = val;
 
-   console.log(newVal);
-
-   (scope || this).vars[name].steps.push({step: step, value:  val.toString()});
+   (scope || this).vars[name].steps.push({step: step, value: this.format(val)});
 
    return newVal;
 }
 
 Environment.prototype.def = function (name, val, step) {
   let valComp = val;
-  let valStr = val !== null ? val.toString() : 'undefined';
+  let valStr = val !== null ? this.format(val) : 'undefined';
 
   return this.vars[name] = {value: valComp, steps: [{step: step, value: valStr}]};
+}
+
+Environment.prototype.format = function (val) {
+  let retVal;
+
+  if (Object.prototype.toString.call(val) === '[object Array]') {
+    // format array
+    retVal = '[';
+    if (val.length > 0) {
+      for (var i = 0; i < val.length; i++) {
+        retVal += this.format(val[i]) + ', ';
+      }
+      retVal = retVal.slice(0, -2);
+    }
+    retVal += ']';
+  } else if (Object.prototype.toString.call(val) === '[object Object]') {
+    // format object
+    retVal = '{'
+    for (var prop in val) {
+      retVal += prop + ': ' + this.format(val[prop]) + ', ';
+    }
+    retVal = retVal.slice(0, -2);
+    retVal += '}';
+  } else if (Object.prototype.toString.call(val) === '[object String]') {
+    // format string
+    retVal = '"' + val + '"';
+  } else if (val === null) {
+    // format null
+    retVal = 'null';
+  } else if (val === undefined) {
+    // format undefined
+    retVal = 'undefined';
+  } else {
+    // fallback
+    retVal = val.toString();
+  }
+
+  return retVal;
 }
 
 /**
@@ -218,8 +254,6 @@ Cluster.prototype.iter = function (node) {
 
       if (node.argument !== null) {
         let nodeName = node.argument.name;
-        console.log(nodeName);
-        console.log("ReturnStatement");
         this.env.set(nodeName, this.env.get(nodeName), this.execution.length);
       }
 
@@ -286,8 +320,6 @@ Cluster.prototype.evaluate = function (node, step) {
         }
       }
 
-      console.log(node.argument.name);
-      console.log("UpdateExpression");
       this.env.set(node.argument.name, updateExprVal, step);
 
       return retVal;
@@ -300,8 +332,6 @@ Cluster.prototype.evaluate = function (node, step) {
       return eval(binaryExpr);
 
     case 'AssignmentExpression':
-      console.log(node.left.name);
-      console.log("AssignmentExpression");
       return this.env.set(node.left.name, this.evaluate(node.right, step), step);
 
     case 'MemberExpression':
@@ -323,8 +353,6 @@ Cluster.prototype.evaluate = function (node, step) {
         let retVal = callExprObj[callExprProp](callExprParams);
 
         if (Object.prototype.toString.call(callExprObj) === '[object Array]') {
-          console.log(node.callee.object.name);
-          console.log("CallExpression");
           this.env.set(node.callee.object.name, callExprObj, step);
         }
 
