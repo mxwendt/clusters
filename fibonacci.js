@@ -168,9 +168,9 @@ Cluster.prototype.iter = function (node) {
     case 'IfStatement':
       this.execution.push(node.loc.start.line);
 
-      if (this.evaluate(node.test) == true) {
+      if (this.evaluate(node.test, this.execution.length) == true) {
         this.iterBlockStatements(node.consequent);
-      } else if (this.evaluate(node.test) == false) {
+      } else if (this.evaluate(node.test, this.execution.length) == false) {
         if (node.alternate !== null) {
           this.iter(node.alternate);
         }
@@ -181,7 +181,7 @@ Cluster.prototype.iter = function (node) {
       break;
 
     case 'WhileStatement':
-      while (this.evaluate(node.test) === true) {
+      while (this.evaluate(node.test, this.execution.length + 1) === true) {
         this.execution.push(node.loc.start.line);
         this.iterBlockStatements(node.body);
       }
@@ -191,19 +191,19 @@ Cluster.prototype.iter = function (node) {
       break;
 
     case 'ForStatement':
+      this.execution.push(node.loc.start.line);
+
       for (var j = 0; j < node.init.declarations.length; j++) {
         let name = node.init.declarations[j].id.name;
         let val = node.init.declarations[j].init === null ? null : this.evaluate(node.init.declarations[j].init, this.execution.length);
         this.env.def(name, val, this.execution.length);
       }
 
-      while (this.evaluate(node.test) === true) {
+      while (this.evaluate(node.test, this.execution.length) === true) {
         this.execution.push(node.loc.start.line);
         this.iterBlockStatements(node.body);
         this.evaluate(node.update, this.execution.length);
       }
-
-      this.execution.push(node.loc.start.line);
 
       break;
 
@@ -279,13 +279,15 @@ Cluster.prototype.evaluate = function (node, step) {
       if (node.prefix === false) {
         if (node.operator === '++') {
           retVal = updateExprVal++;
+          ++step;
         }
         else if (node.operator === '--') {
           retVal = updateExprVal--;
+          --step;
         }
       }
 
-      this.env.set(node.argument.name, updateExprVal, step);
+      this.env.set(node.argument.name, updateExprVal, currentStep);
 
       return retVal;
 
