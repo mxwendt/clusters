@@ -102,16 +102,14 @@ Environment.prototype.set = function (name, val, step) {
    // let's not allow defining globals from a nested environment
    if (!scope && this.parent) throw new Error('Undefined variable ' + name);
 
-   let newVal = (scope || this).vars[name].value = val;
-
    (scope || this).vars[name].steps.push({step: step, value: this.format(val)});
 
-   return newVal;
+   return (scope || this).vars[name].value = val;
 }
 
 Environment.prototype.def = function (name, val, step) {
   let valComp = val;
-  let valStr = val !== null ? this.format(val) : 'undefined';
+  let valStr = this.format(val);
 
   return this.vars[name] = {value: valComp, steps: [{step: step, value: valStr}]};
 }
@@ -169,20 +167,20 @@ function Cluster (functionDeclarationNode) {
 
   // Add params to the environment
   this.env.def(functionDeclarationNode.params[0].name,
-            // "searchengine=http://www.google.com/search?q=$1\n" +
-            // "spitefulness=9.7\n" +
+            "searchengine=http://www.google.com/search?q=$1\n" +
+            "spitefulness=9.7" +
             "\n" +
             "; comments are preceded by a semicolon...\n" +
             "; each section concerns an individual enemy\n" +
             "[larry]\n" +
-            // "fullname=Larry Doe\n" +
-            // "type=kindergarten bully\n" +
-            // "website=http://www.geocities.com/CapeCanaveral/11451\n" +
+            "fullname=Larry Doe\n" +
+            "type=kindergarten bully\n" +
+            "website=http://www.geocities.com/CapeCanaveral/11451\n" +
             "\n" +
-            "[gargamel]\n", 0);// +
-            // "fullname=Gargamel\n" +
-            // "type=evil sorcerer\n" +
-            // "outputdir=/home/marijn/enemies/gargamel", 0);
+            "[gargamel]\n" +
+            "fullname=Gargamel\n" +
+            "type=evil sorcerer\n" +
+            "outputdir=/home/marijn/enemies/gargamel", 0);
 
   // Go to each statement in the block
   this.iterBlockStatements(functionDeclarationNode.body);
@@ -195,9 +193,7 @@ Cluster.prototype.iter = function (node) {
       this.execution.push(node.loc.start.line);
 
       for (var i = 0; i < node.declarations.length; i++) {
-        let name = node.declarations[i].id.name;
-        let val = node.declarations[i].init === null ? null : this.evaluate(node.declarations[i].init, this.execution.length);
-        this.env.def(name, val, this.execution.length);
+        this.evaluate(node.declarations[i], this.execution.length);
       }
 
       break;
@@ -205,9 +201,9 @@ Cluster.prototype.iter = function (node) {
     case 'IfStatement':
       this.execution.push(node.loc.start.line);
 
-      if (this.evaluate(node.test) == true) {
+      if (this.evaluate(node.test, this.execution.length) === true) {
         this.iterBlockStatements(node.consequent);
-      } else if (this.evaluate(node.test) == false) {
+      } else if (this.evaluate(node.test, this.execution.length) === false) {
         if (node.alternate !== null) {
           this.iter(node.alternate);
         }
@@ -216,29 +212,27 @@ Cluster.prototype.iter = function (node) {
       break;
 
     case 'WhileStatement':
-      while (this.evaluate(node.test) === true) {
-        this.execution.push(node.loc.start.line);
-        this.iterBlockStatements(node.body);
-      }
-
       this.execution.push(node.loc.start.line);
+
+      while (this.evaluate(node.test, this.execution.length + 1) === true) {
+        this.iterBlockStatements(node.body);
+        this.execution.push(node.loc.start.line);
+      }
 
       break;
 
     case 'ForStatement':
+      this.execution.push(node.loc.start.line);
+
       for (var j = 0; j < node.init.declarations.length; j++) {
-        let name = node.init.declarations[j].id.name;
-        let val = node.init.declarations[j].init === null ? null : this.evaluate(node.init.declarations[j].init, this.execution.length);
-        this.env.def(name, val, this.execution.length);
+        this.evaluate(node.init.declarations[j], this.execution.length);
       }
 
-      while (this.evaluate(node.test) === true) {
-        this.execution.push(node.loc.start.line);
+      while (this.evaluate(node.test, this.execution.length) === true) {
         this.iterBlockStatements(node.body);
         this.evaluate(node.update, this.execution.length);
+        this.execution.push(node.loc.start.line);
       }
-
-      this.execution.push(node.loc.start.line);
 
       break;
 
@@ -252,9 +246,9 @@ Cluster.prototype.iter = function (node) {
     case 'ReturnStatement':
       this.execution.push(node.loc.start.line);
 
+      // the return statement is the only statement that changes the environment directly
       if (node.argument !== null) {
-        let nodeName = node.argument.name;
-        this.env.set(nodeName, this.env.get(nodeName), this.execution.length);
+        this.env.set(node.argument.name, this.evaluate(node.argument, this.execution.length), this.execution.length);
       }
 
       break;
@@ -279,14 +273,21 @@ Cluster.prototype.evaluate = function (node, step) {
     case 'Identifier':
       return this.env.get(node.name);
 
+    case 'VariableDeclarator':
+      let varName = node.id.name;
+      let varVal = node.init === null ? undefined : this.evaluate(node.init, step);
+      this.env.def(varName, varVal, step);
+
+      return undefined; // because JS also returns undefined
+
     case 'ArrayExpression':
-      let array = [];
+      let arr = [];
 
       for (var i = 0; i < node.elements.length; i++) {
-        array.push(this.evaluate(node.elements[i], step));
+        arr.push(this.evaluate(node.elements[i], step));
       }
 
-      return array;
+      return arr;
 
     case 'ObjectExpression':
       let obj = {};
@@ -336,8 +337,10 @@ Cluster.prototype.evaluate = function (node, step) {
 
     case 'MemberExpression':
       if (node.computed === true) {
+        // computed (a[b]) member expression, property is an 'Expression'
         return this.evaluate(node.object)[this.evaluate(node.property, step)];
       } else if (node.computed === false) {
+        // static (a.b) member expression, property is an 'Identifier'
         return this.evaluate(node.object, step)[node.property.name];
       }
 
@@ -385,8 +388,6 @@ function Visualizer (parser, walker) {
   this.codeStr = parser.getCodeStr();
   this.execution = walker.getCluster().getExecution();
   this.env = walker.getCluster().getEnv();
-
-  console.log(this.env);
 
   this.markupWrapper();
   this.markupCode(this.codeStr);

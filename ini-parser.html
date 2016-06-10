@@ -22,6 +22,8 @@
             "fullname=Gargamel" +
             "type=evil sorcerer" +
             "outputdir=/home/marijn/enemies/gargamel";
+
+
           -->
   <pre id="code" class="default linenums prettyprint">
     /**
@@ -44,7 +46,7 @@
           categories.push(currentSection);
         } else if (/^(\w+)=(.*)$/.test(lines[i])) {
           match = lines[i].match(/^(\w+)=(.*)$/);
-          currentSection.fields.push({name: match[1], value: match[2]});
+          //currentSection.fields.push({name: match[1], value: match[2]});
         } else {
           throw new Error('Line "' + line + '" is invalid.');
         }
