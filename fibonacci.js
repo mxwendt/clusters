@@ -158,9 +158,7 @@ Cluster.prototype.iter = function (node) {
       this.execution.push(node.loc.start.line);
 
       for (var i = 0; i < node.declarations.length; i++) {
-        let name = node.declarations[i].id.name;
-        let val = node.declarations[i].init === null ? null : this.evaluate(node.declarations[i].init, this.execution.length);
-        this.env.def(name, val, this.execution.length);
+        this.evaluate(node.declarations[i], this.execution.length);
       }
 
       break;
@@ -168,25 +166,23 @@ Cluster.prototype.iter = function (node) {
     case 'IfStatement':
       this.execution.push(node.loc.start.line);
 
-      if (this.evaluate(node.test, this.execution.length) == true) {
+      if (this.evaluate(node.test, this.execution.length) === true) {
         this.iterBlockStatements(node.consequent);
-      } else if (this.evaluate(node.test, this.execution.length) == false) {
+      } else if (this.evaluate(node.test, this.execution.length) === false) {
         if (node.alternate !== null) {
           this.iter(node.alternate);
         }
       }
 
-      // TODO: Implement ELSE consequent
-
       break;
 
     case 'WhileStatement':
-      while (this.evaluate(node.test, this.execution.length + 1) === true) {
-        this.execution.push(node.loc.start.line);
-        this.iterBlockStatements(node.body);
-      }
-
       this.execution.push(node.loc.start.line);
+
+      while (this.evaluate(node.test, this.execution.length) === true) {
+        this.iterBlockStatements(node.body);
+        this.execution.push(node.loc.start.line);
+      }
 
       break;
 
@@ -194,15 +190,13 @@ Cluster.prototype.iter = function (node) {
       this.execution.push(node.loc.start.line);
 
       for (var j = 0; j < node.init.declarations.length; j++) {
-        let name = node.init.declarations[j].id.name;
-        let val = node.init.declarations[j].init === null ? null : this.evaluate(node.init.declarations[j].init, this.execution.length);
-        this.env.def(name, val, this.execution.length);
+        this.evaluate(node.init.declarations[j], this.execution.length);
       }
 
       while (this.evaluate(node.test, this.execution.length) === true) {
-        this.execution.push(node.loc.start.line);
         this.iterBlockStatements(node.body);
         this.evaluate(node.update, this.execution.length);
+        this.execution.push(node.loc.start.line);
       }
 
       break;
@@ -217,9 +211,9 @@ Cluster.prototype.iter = function (node) {
     case 'ReturnStatement':
       this.execution.push(node.loc.start.line);
 
+      // the return statement is the only statement that changes the environment directly
       if (node.argument !== null) {
-        let nodeName = node.argument.name;
-        this.env.set(nodeName, this.env.get(nodeName), this.execution.length);
+        this.env.set(node.argument.name, this.evaluate(node.argument, this.execution.length), this.execution.length);
       }
 
       break;
@@ -243,6 +237,13 @@ Cluster.prototype.evaluate = function (node, step) {
 
     case 'Identifier':
       return this.env.get(node.name);
+
+    case 'VariableDeclarator':
+      let varName = node.id.name;
+      let varVal = node.init === null ? null : this.evaluate(node.init, step);
+      this.env.def(varName, varVal, step);
+
+      return undefined; // because JS also returns undefined
 
     case 'ArrayExpression':
       let array = [];
@@ -287,7 +288,7 @@ Cluster.prototype.evaluate = function (node, step) {
         }
       }
 
-      this.env.set(node.argument.name, updateExprVal, currentStep);
+      this.env.set(node.argument.name, updateExprVal, step);
 
       return retVal;
 
