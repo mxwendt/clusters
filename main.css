@@ -8,6 +8,7 @@ Wrapper
 
 .code, .data, .state {
   display: block;
+  margin-bottom: 50px;
   position: relative;
   float: left;
 }
