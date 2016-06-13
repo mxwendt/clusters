@@ -104,16 +104,54 @@ Environment.prototype.set = function (name, val, step) {
 
    let newVal = (scope || this).vars[name].value = val;
 
-   (scope || this).vars[name].steps.push({step: step, value:  val.toString()});
+   (scope || this).vars[name].steps.push({step: step, value: this.format(val)});
 
    return newVal;
 }
 
 Environment.prototype.def = function (name, val, step) {
   let valComp = val;
-  let valStr = val !== null ? val.toString() : 'undefined';
+  let valStr = this.format(val);
 
   return this.vars[name] = {value: valComp, steps: [{step: step, value: valStr}]};
+}
+
+Environment.prototype.format = function (val) {
+  let retVal;
+
+  if (Object.prototype.toString.call(val) === '[object Array]') {
+    // format array
+    retVal = '[';
+    if (val.length > 0) {
+      for (var i = 0; i < val.length; i++) {
+        retVal += this.format(val[i]) + ', ';
+      }
+      retVal = retVal.slice(0, -2);
+    }
+    retVal += ']';
+  } else if (Object.prototype.toString.call(val) === '[object Object]') {
+    // format object
+    retVal = '{'
+    for (var prop in val) {
+      retVal += prop + ': ' + this.format(val[prop]) + ', ';
+    }
+    retVal = retVal.slice(0, -2);
+    retVal += '}';
+  } else if (Object.prototype.toString.call(val) === '[object String]') {
+    // format string
+    retVal = '"' + val + '"';
+  } else if (val === null) {
+    // format null
+    retVal = 'null';
+  } else if (val === undefined) {
+    // format undefined
+    retVal = 'undefined';
+  } else {
+    // fallback
+    retVal = val.toString();
+  }
+
+  return retVal;
 }
 
 /**
