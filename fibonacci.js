@@ -321,7 +321,13 @@ Cluster.prototype.evaluate = function (node, step) {
         let retVal = callExprObj[callExprProp](callExprParams);
 
         if (Object.prototype.toString.call(callExprObj) === '[object Array]') {
-          this.env.set(node.callee.object.name, callExprObj, step);
+          if (node.callee.object.type === 'Identifier') {
+            // top level method i.e. a.push
+            this.env.set(node.callee.object.name, this.env.get(node.callee.object.name), step);
+          } else if (node.callee.object.type === 'MemberExpression') {
+            // first level method i.e. a.b.push
+            this.env.set(node.callee.object.object.name, this.env.get(node.callee.object.object.name), step);
+          }
         }
 
         return retVal;

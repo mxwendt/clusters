@@ -347,16 +347,24 @@ Cluster.prototype.evaluate = function (node, step) {
       break;
 
     case 'CallExpression':
-      if (node.callee.computed === true) { // computed (a[b]) member expression, property is an 'Expression'
+      if (node.callee.computed === true) {
+        // computed (a[b]) member expression, property is an 'Expression'
         // TODO: Implement computed expression
-      } else if (node.callee.computed === false) { // static (a.b) member expression, property is an 'Identifier'
+      } else if (node.callee.computed === false) {
+        // static (a.b) member expression, property is an 'Identifier'
         let callExprObj = this.evaluate(node.callee.object, step);
         let callExprProp = node.callee.property.name;
         let callExprParams = this.evaluate(node.arguments[0], step); // TODO: Allow more than one argument
         let retVal = callExprObj[callExprProp](callExprParams);
 
         if (Object.prototype.toString.call(callExprObj) === '[object Array]') {
-          this.env.set(node.callee.object.name, callExprObj, step);
+          if (node.callee.object.type === 'Identifier') {
+            // top level method i.e. a.push
+            this.env.set(node.callee.object.name, this.env.get(node.callee.object.name), step);
+          } else if (node.callee.object.type === 'MemberExpression') {
+            // first level method i.e. a.b.push
+            this.env.set(node.callee.object.object.name, this.env.get(node.callee.object.object.name), step);
+          }
         }
 
         return retVal;
