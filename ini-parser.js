@@ -457,16 +457,16 @@ Visualizer.prototype.markupState = function () {
     el: self.stateWrapper,
     template:
       '<ol class="stateParams">' +
-        '<li>uses string <span class="stateVal str">"{{{ params.string.val }}}"</span></li>' +
+        '<li>uses string <span class="stateVal str">"{{{ beautify(params.string.val) }}}"</span></li>' +
       '</ol>' +
       '<ol class="stateValues">' +
-        '<li>sets currentSection to <span class="stateVal">{{ values.currentSection.val }}</span></li>' +
-        '<li>sets categories to <span class="stateVal">{{ values.categories.val }}</span></li>' +
-        '<li>sets lines to <span class="stateVal">{{ values.lines.val }}</span></li>' +
-        '<li>sets match to <span class="stateVal">{{ values.match.val }}</span></li>' +
+        '<li>sets currentSection to <span class="stateVal">{{ beautify(values.currentSection.val) }}</span></li>' +
+        '<li>sets categories to <span class="stateVal">{{ beautify(values.categories.val) }}</span></li>' +
+        '<li>sets lines to <span class="stateVal">{{ beautify(values.lines.val) }}</span></li>' +
+        '<li>sets match to <span class="stateVal">{{ beautify(values.match.val) }}</span></li>' +
       '</ol>' +
       '<ol class="stateReturns">' +
-        '<li>returns <span class="stateVal">{{ returns.categories.val }}</span></li>' +
+        '<li>returns <span class="stateVal">{{ beautify(returns.categories.val) }}</span></li>' +
       '</ol>',
     data: {
       params: {
@@ -505,6 +505,9 @@ Visualizer.prototype.markupState = function () {
         categories: {
           val: self.env.getAtStep('categories', 1)
         }
+      },
+      beautify: function(val) {
+        return parser.beautify(val);
       }
     }
   });

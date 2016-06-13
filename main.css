@@ -233,6 +233,7 @@ State
 
 .state > ol > li > span {
   display: inline-block;
+  white-space: pre-wrap;
 }
 
 .state > ol > li > input,

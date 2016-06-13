@@ -458,17 +458,17 @@ Visualizer.prototype.markupState = function () {
     el: self.stateWrapper,
     template:
       '<ol class="stateParams">' +
-        '<li>uses size <span class="stateVal">{{ params.size.val }}</span></li>' +
+        '<li>uses size <span class="stateVal">{{ beautify(params.size.val) }}</span></li>' +
       '</ol>' +
       '<ol class="stateValues">' +
-        '<li>sets first to <span class="stateVal">{{ values.first.val }}</span></li>' +
-        '<li>sets second to <span class="stateVal">{{ values.second.val }}</span></li>' +
-        '<li>sets next to <span class="stateVal">{{ values.next.val }}</span></li>' +
-        '<li>sets count to <span class="stateVal">{{ values.count.val }}</span></li>' +
-        '<li>sets result to <span class="stateVal">{{ values.result.val }}</span></li>' +
+        '<li>sets first to <span class="stateVal">{{ beautify(values.first.val) }}</span></li>' +
+        '<li>sets second to <span class="stateVal">{{ beautify(values.second.val) }}</span></li>' +
+        '<li>sets next to <span class="stateVal">{{ beautify(values.next.val) }}</span></li>' +
+        '<li>sets count to <span class="stateVal">{{ beautify(values.count.val) }}</span></li>' +
+        '<li>sets result to <span class="stateVal">{{ beautify(values.result.val) }}</span></li>' +
       '</ol>' +
       '<ol class="stateReturns">' +
-        '<li>returns <span class="stateVal">{{ returns.result.val }}</span></li>' +
+        '<li>returns <span class="stateVal">{{ beautify(returns.result.val) }}</span></li>' +
       '</ol>',
     data: {
       params: {
@@ -497,6 +497,9 @@ Visualizer.prototype.markupState = function () {
         result: {
           val: self.env.getAtStep('result', 1)
         }
+      },
+      beautify: function(val) {
+        return parser.beautify(val);
       }
     }
   });
