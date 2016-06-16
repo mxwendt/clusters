@@ -39,7 +39,7 @@
 
       for (var i = 0; i < lines.length; i++) {
         if (/^\s*(;.*)?$/.test(lines[i])) {
-          return;
+          continue;
         } else if (/^\[(.*)\]$/.test(lines[i])) {
           match = lines[i].match(/^\[(.*)\]$/);
           currentSection = {name: match[1], fields: []};
