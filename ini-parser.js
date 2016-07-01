@@ -107,11 +107,11 @@ Environment.prototype.set = function (name, val, step) {
    return (scope || this).vars[name].value = val;
 }
 
-Environment.prototype.def = function (name, val, step) {
+Environment.prototype.def = function (name, val, step, type) {
   let valComp = val;
   let valStr = this.format(val);
 
-  return this.vars[name] = {value: valComp, steps: [{step: step, value: valStr}]};
+  return this.vars[name] = {value: valComp, steps: [{step: step, value: valStr}], type: type};
 }
 
 Environment.prototype.format = function (val) {
@@ -180,7 +180,7 @@ function Cluster (functionDeclarationNode) {
             "[gargamel]\n" +
             "fullname=Gargamel\n" +
             "type=evil sorcerer\n" +
-            "outputdir=/home/marijn/enemies/gargamel", 0);
+            "outputdir=/home/marijn/enemies/gargamel", 0, "param");
 
   // Go to each statement in the block
   this.iterBlockStatements(functionDeclarationNode.body);
@@ -447,73 +447,52 @@ Visualizer.prototype.markupCode = function (codeStr) {
 }
 
 Visualizer.prototype.markupState = function () {
-  let params = document.createElement('ol');
-  params.classList.add('stateParams');
-
-  let item = document.createElement('li');
-  item.textContent = 'uses string 8';
-
-  params.appendChild(item);
-
-  this.stateWrapper.appendChild(params);
-
   let self = this;
+
+  // Template
+
+  let paramsTemplate = '<ol class="stateParams">';
+  let valuesTemplate = '<ol class="stateValues">';
+
+  for (let name in this.env.vars) {
+    if (this.env.vars[name].type === 'param') {
+      paramsTemplate += '<li>' + name + '{{{ beautify(state.params.' + name + '.val) }}}</li>';
+    } else {
+      valuesTemplate += '<li>' + name + '{{{ beautify(state.values.' + name + '.val) }}}</li>';
+    }
+  }
+
+  paramsTemplate += '</ol>';
+  valuesTemplate += '</ol>';
+
+  let ractiveTemplate = paramsTemplate + valuesTemplate;
+
+  // Data
+
+  let ractiveData = Object.create(null);
+
+  ractiveData.params = Object.create(null);
+  ractiveData.values = Object.create(null);
+
+  for (let name in this.env.vars) {
+    if (this.env.vars[name].type === 'param') {
+      ractiveData.params[name] = Object.create(null);
+      ractiveData.params[name].val = this.env.getAtStep(name, 1) // Using 1 gets the initial value
+    } else {
+      ractiveData.values[name] = Object.create(null);
+      ractiveData.values[name].val = this.env.getAtStep(name, 1) // Using 1 gets the initial value
+    }
+  }
+
+  // Ractive
 
   this.ractive = new Ractive({
     el: self.stateWrapper,
-    template:
-      '<ol class="stateParams">' +
-        '<li>uses string <span class="stateVal str">"{{{ beautify(params.string.val) }}}"</span></li>' +
-      '</ol>' +
-      '<ol class="stateValues">' +
-        '<li>sets currentSection to <span class="stateVal">{{ beautify(values.currentSection.val) }}</span></li>' +
-        '<li>sets categories to <span class="stateVal">{{ beautify(values.categories.val) }}</span></li>' +
-        '<li>sets lines to <span class="stateVal">{{ beautify(values.lines.val) }}</span></li>' +
-        '<li>sets match to <span class="stateVal">{{ beautify(values.match.val) }}</span></li>' +
-      '</ol>' +
-      '<ol class="stateReturns">' +
-        '<li>returns <span class="stateVal">{{ beautify(returns.categories.val) }}</span></li>' +
-      '</ol>',
+    template: ractiveTemplate,
     data: {
-      params: {
-        string: {
-          val: "searchengine=http://www.google.com/search?q=$1<br>" +
-                "spitefulness=9.7<br>" +
-                "<br>" +
-                "; comments are preceded by a semicolon...<br>" +
-                "; each section concerns an individual enemy<br>" +
-                "[larry]<br>" +
-                "fullname=Larry Doe<br>" +
-                "type=kindergarten bully<br>" +
-                "website=http://www.geocities.com/CapeCanaveral/11451<br>" +
-                "<br>" +
-                "[gargamel]<br>" +
-                "fullname=Gargamel<br>" +
-                "type=evil sorcerer<br>" +
-                "outputdir=/home/marijn/enemies/gargamel"
-        }
-      },
-      values: {
-        currentSection: {
-          val: self.env.getAtStep('currentSection', 1)
-        },
-        categories: {
-          val: self.env.getAtStep('categories', 1)
-        },
-        lines: {
-          val: self.env.getAtStep('lines', 1)
-        },
-        match: {
-          val: self.env.getAtStep('match', 1)
-        }
-      },
-      returns: {
-        categories: {
-          val: self.env.getAtStep('categories', 1)
-        }
-      },
+      state: ractiveData,
       beautify: function(val) {
-        return parser.beautify(val);
+        if (val !== undefined) return ' = <span class="stateVal">' + parser.beautify(val) + '</span>';
       }
     }
   });
@@ -686,21 +665,14 @@ UI.prototype.updateState = function () {
   let env = this.vis.getEnvironment();
   let step = Number(this.execSlider.value) + 1;
 
-  for (var value in ractive.get().values) {
+  for (let param in ractive.get().state.values) {
     // if (ractive.values.hasOwnProperty(value)) {}
-    ractive.set('values.' + value + '.val', env.getAtStep(value, step));
+    ractive.set('state.values.' + param + '.val', env.getAtStep(param, step));
   }
 
-  if (step === this.vis.getExecution().length) {
-    for (var retVal in ractive.get().returns) {
-      // if (ractive.values.hasOwnProperty(value)) {}
-      ractive.set('returns.' + retVal + '.val', env.getAtStep(retVal, step));
-    }
-  } else {
-    for (var retVal in ractive.get().returns) {
-      // if (ractive.values.hasOwnProperty(value)) {}
-      ractive.set('returns.' + retVal + '.val', '');
-    }
+  for (let value in ractive.get().state.values) {
+    // if (ractive.values.hasOwnProperty(value)) {}
+    ractive.set('state.values.' + value + '.val', env.getAtStep(value, step));
   }
 }
 

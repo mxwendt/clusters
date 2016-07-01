@@ -109,11 +109,11 @@ Environment.prototype.set = function (name, val, step) {
    return newVal;
 }
 
-Environment.prototype.def = function (name, val, step) {
+Environment.prototype.def = function (name, val, step, type) {
   let valComp = val;
   let valStr = this.format(val);
 
-  return this.vars[name] = {value: valComp, steps: [{step: step, value: valStr}]};
+  return this.vars[name] = {value: valComp, steps: [{step: step, value: valStr}], type: type};
 }
 
 Environment.prototype.format = function (val) {
@@ -169,7 +169,7 @@ function Cluster (functionDeclarationNode) {
 
   // Add params to the environment
   // TODO: Make params dynamic
-  this.env.def(functionDeclarationNode.params[0].name, 8, 0);
+  this.env.def(functionDeclarationNode.params[0].name, 8, 0, "param");
   // this.env.def(functionDeclarationNode.params[0].name, "searchengine=http://www.google.com/search?q=$1\n" +
   //           "spitefulness=9.7\n" +
   //           "\n" +
@@ -284,7 +284,7 @@ Cluster.prototype.evaluate = function (node, step) {
 
     case 'VariableDeclarator':
       let varName = node.id.name;
-      let varVal = node.init === null ? null : this.evaluate(node.init, step);
+      let varVal = node.init === null ? undefined : this.evaluate(node.init, step);
       this.env.def(varName, varVal, step);
 
       return undefined; // because JS also returns undefined
@@ -448,64 +448,52 @@ Visualizer.prototype.markupCode = function (codeStr) {
 }
 
 Visualizer.prototype.markupState = function () {
-  let params = document.createElement('ol');
-  params.classList.add('stateParams');
-
-  let item = document.createElement('li');
-  item.textContent = 'uses size 8';
-
-  params.appendChild(item);
-
-  this.stateWrapper.appendChild(params);
-
   let self = this;
+
+  // Template
+
+  let paramsTemplate = '<ol class="stateParams">';
+  let valuesTemplate = '<ol class="stateValues">';
+
+  for (let name in this.env.vars) {
+    if (this.env.vars[name].type === 'param') {
+      paramsTemplate += '<li>' + name + '{{{ beautify(state.params.' + name + '.val) }}}</li>';
+    } else {
+      valuesTemplate += '<li>' + name + '{{{ beautify(state.values.' + name + '.val) }}}</li>';
+    }
+  }
+
+  paramsTemplate += '</ol>';
+  valuesTemplate += '</ol>';
+
+  let ractiveTemplate = paramsTemplate + valuesTemplate;
+
+  // Data
+
+  let ractiveData = Object.create(null);
+
+  ractiveData.params = Object.create(null);
+  ractiveData.values = Object.create(null);
+
+  for (let name in this.env.vars) {
+    if (this.env.vars[name].type === 'param') {
+      ractiveData.params[name] = Object.create(null);
+      ractiveData.params[name].val = this.env.getAtStep(name, 1) // Using 1 gets the initial value
+    } else {
+      ractiveData.values[name] = Object.create(null);
+      ractiveData.values[name].val = this.env.getAtStep(name, 1) // Using 1 gets the initial value
+    }
+  }
+
+  // Ractive
 
   this.ractive = new Ractive({
     el: self.stateWrapper,
-    template:
-      '<ol class="stateParams">' +
-        '<li>uses size <span class="stateVal">{{ beautify(params.size.val) }}</span></li>' +
-      '</ol>' +
-      '<ol class="stateValues">' +
-        '<li>sets first to <span class="stateVal">{{ beautify(values.first.val) }}</span></li>' +
-        '<li>sets second to <span class="stateVal">{{ beautify(values.second.val) }}</span></li>' +
-        '<li>sets next to <span class="stateVal">{{ beautify(values.next.val) }}</span></li>' +
-        '<li>sets count to <span class="stateVal">{{ beautify(values.count.val) }}</span></li>' +
-        '<li>sets result to <span class="stateVal">{{ beautify(values.result.val) }}</span></li>' +
-      '</ol>' +
-      '<ol class="stateReturns">' +
-        '<li>returns <span class="stateVal">{{ beautify(returns.result.val) }}</span></li>' +
-      '</ol>',
+    template: ractiveTemplate,
     data: {
-      params: {
-        size: {
-          val: self.env.getAtStep('size', 1) // Using 1 gets the initial value
-        }
-      },
-      values: {
-        first: {
-          val: self.env.getAtStep('first', 1)
-        },
-        second: {
-          val: self.env.getAtStep('second', 1)
-        },
-        next: {
-          val: self.env.getAtStep('next', 1)
-        },
-        count: {
-          val: self.env.getAtStep('count', 1)
-        },
-        result: {
-          val: self.env.getAtStep('result', 1)
-        }
-      },
-      returns: {
-        result: {
-          val: self.env.getAtStep('result', 1)
-        }
-      },
+      state: ractiveData,
       beautify: function(val) {
-        return parser.beautify(val);
+        if (val !== undefined) return ' = <span class="stateVal">' + parser.beautify(val) + '</span>';
       }
     }
   });
@@ -678,21 +666,14 @@ UI.prototype.updateState = function () {
   let env = this.vis.getEnvironment();
   let step = Number(this.execSlider.value) + 1;
 
-  for (var value in ractive.get().values) {
+  for (let param in ractive.get().state.values) {
     // if (ractive.values.hasOwnProperty(value)) {}
-    ractive.set('values.' + value + '.val', env.getAtStep(value, step));
+    ractive.set('state.values.' + param + '.val', env.getAtStep(param, step));
   }
 
-  if (step === this.vis.getExecution().length) {
-    for (var retVal in ractive.get().returns) {
-      // if (ractive.values.hasOwnProperty(value)) {}
-      ractive.set('returns.' + retVal + '.val', env.getAtStep(retVal, step));
-    }
-  } else {
-    for (var retVal in ractive.get().returns) {
-      // if (ractive.values.hasOwnProperty(value)) {}
-      ractive.set('returns.' + retVal + '.val', '');
-    }
+  for (let value in ractive.get().state.values) {
+    // if (ractive.values.hasOwnProperty(value)) {}
+    ractive.set('state.values.' + value + '.val', env.getAtStep(value, step));
   }
 }
 
