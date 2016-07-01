@@ -170,20 +170,6 @@ function Cluster (functionDeclarationNode) {
   // Add params to the environment
   // TODO: Make params dynamic
   this.env.def(functionDeclarationNode.params[0].name, 8, 0, "param");
-  // this.env.def(functionDeclarationNode.params[0].name, "searchengine=http://www.google.com/search?q=$1\n" +
-  //           "spitefulness=9.7\n" +
-  //           "\n" +
-  //           "; comments are preceded by a semicolon...\n" +
-  //           "; each section concerns an individual enemy\n" +
-  //           "[larry]\n" +
-  //           "fullname=Larry Doe\n" +
-  //           "type=kindergarten bully\n" +
-  //           "website=http://www.geocities.com/CapeCanaveral/11451\n" +
-  //           "\n" +
-  //           "[gargamel]\n" +
-  //           "fullname=Gargamel\n" +
-  //           "type=evil sorcerer\n" +
-  //           "outputdir=/home/marijn/enemies/gargamel", 0);
 
   // Go to each statement in the block
   this.iterBlockStatements(functionDeclarationNode.body);
