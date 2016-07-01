@@ -166,7 +166,15 @@ function Cluster (functionDeclarationNode) {
   this.execution = [];
 
   // Add params to the environment
-  this.env.def(functionDeclarationNode.params[0].name,
+  this.parseAnnotations(functionDeclarationNode.params);
+
+  // Go to each statement in the block
+  this.iterBlockStatements(functionDeclarationNode.body);
+}
+
+Cluster.prototype.parseAnnotations = function (paramsArray) {
+  // TODO: Make params dynamic
+  this.env.def(paramsArray[0].name,
             "searchengine=http://www.google.com/search?q=$1\n" +
             "spitefulness=9.7" +
             "\n" +
@@ -181,9 +189,6 @@ function Cluster (functionDeclarationNode) {
             "fullname=Gargamel\n" +
             "type=evil sorcerer\n" +
             "outputdir=/home/marijn/enemies/gargamel", 0, "param");
-
-  // Go to each statement in the block
-  this.iterBlockStatements(functionDeclarationNode.body);
 }
 
 Cluster.prototype.iter = function (node) {

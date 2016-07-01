@@ -168,11 +168,15 @@ function Cluster (functionDeclarationNode) {
   this.execution = [];
 
   // Add params to the environment
-  // TODO: Make params dynamic
-  this.env.def(functionDeclarationNode.params[0].name, 8, 0, "param");
+  this.parseAnnotations(functionDeclarationNode.params);
 
   // Go to each statement in the block
   this.iterBlockStatements(functionDeclarationNode.body);
+}
+
+Cluster.prototype.parseAnnotations = function (paramsArray) {
+  // TODO: Make params dynamic
+  this.env.def(paramsArray[0].name, 8, 0, "param");
 }
 
 Cluster.prototype.iter = function (node) {
