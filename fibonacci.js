@@ -256,6 +256,12 @@ Cluster.prototype.iter = function (node) {
 
       break;
 
+    case 'ContinueStatement':
+      this.execution.push(node.loc.start.line);
+
+      break;
+
+
     default:
       throw new Error('I don\'t know how to iterate ' + node.type);
   }
