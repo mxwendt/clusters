@@ -11,15 +11,68 @@ console.log("INIT");
 
 function Parser (codeText) {
   this.codeStr = this.beautify(codeText);
-  this.ast = this.parse(this.codeStr);
+  this.ast = this.parseAST(this.codeStr);
+  this.annotations = this.parseComments(this.codeStr);
 }
 
 Parser.prototype.beautify = function (codeText) {
   return js_beautify(codeText);
 }
 
-Parser.prototype.parse = function (codeStr) {
+Parser.prototype.parseAST = function (codeStr) {
   return acorn.parse(codeStr, {sourceType: "script", locations: true});
+}
+
+Parser.prototype.parseComments = function (codeStr) {
+  let comments = [];
+
+  acorn.parse(codeStr, {
+    sourceType: "script",
+    locations: true,
+    onComment: comments // collect comments in Esprima's format
+  });
+
+  return this.parseAnnotations(comments);
+}
+
+Parser.prototype.parseAnnotations = function (comments) {
+  let annotations = [];
+
+  for (let i = 0; i < comments.length; i++) {
+
+    // Copy the location of the full comment (multiple lines in case of block comment)
+    let annotationNode = Object.create(null);
+    annotationNode.loc = comments[i].loc;
+    annotationNode.params = [];
+
+    // Parse for @param annotations
+    let lines = comments[i].value.split(/\r?\n/);
+
+    for (let j = 0; j < lines.length; j++) {
+      if (lines[j].indexOf('@param') > 0) {
+        let paramNode = Object.create(null);
+        let paramName = lines[j].substring(lines[j].indexOf('} ') + 2);
+        let paramVals = lines[j].substring(lines[j].indexOf('{') + 1, lines[j].indexOf('}')).split(', ');
+
+        paramNode.name = paramName;
+        paramNode.type = paramVals[0];
+
+        if (paramVals[0] === "Number") {
+          paramNode.init = Number(paramVals[1]);
+          paramNode.min = Number(paramVals[2]);
+          paramNode.max = Number(paramVals[3]);
+        } else if (paramVals[0] === "String") {
+          paramNode.init = eval(paramVals[1]);
+        }
+
+        annotationNode.params.push(paramNode);
+      }
+    }
+
+    annotations.push(annotationNode);
+  }
+
+  return annotations;
 }
 
 Parser.prototype.getCodeStr = function () {
@@ -30,22 +83,42 @@ Parser.prototype.getAST = function () {
   return this.ast;
 }
 
+Parser.prototype.getAnnotations = function () {
+  return this.annotations;
+}
+
 /**
  * WALKER
  *
- * Walks an abstract syntax tree and generates clusters.
+ * Walks an abstract syntax tree and generates clusters with annotations.
  */
 
 function Walker (parser) {
-  this.walk(parser.getAST());
+  this.walk(parser.getAST(), parser.getAnnotations());
 }
 
-Walker.prototype.walk = function (ast) {
+Walker.prototype.walk = function (ast, annotations) {
+  let self = this;
+
   acorn.walk.recursive(ast, [this], {
-    FunctionDeclaration: function(node, state/*, c*/) {
-      state[0].cluster = new Cluster(node);
+    FunctionDeclaration: function (functionNode, state/*, c*/) {
+      let annotationNode = self.findAnnotation(annotations, functionNode.loc);
+
+      state[0].cluster = new Cluster(functionNode, annotationNode);
     }
   });
+}
+
+Walker.prototype.findAnnotation = function (annotations, functionNodeLoc) {
+  let annotationNode;
+
+  for (var i = 0; i < annotations.length; i++) {
+    if (annotations[i].loc.end.line + 1 === functionNodeLoc.start.line) {
+      annotationNode = annotations[i];
+    }
+  }
+
+  return annotationNode;
 }
 
 Walker.prototype.getCluster = function () {
@@ -102,18 +175,54 @@ Environment.prototype.set = function (name, val, step) {
    // let's not allow defining globals from a nested environment
    if (!scope && this.parent) throw new Error('Undefined variable ' + name);
 
-   let newVal = (scope || this).vars[name].value = val;
+   (scope || this).vars[name].steps.push({step: step, value: this.format(val)});
 
-   (scope || this).vars[name].steps.push({step: step, value:  val.toString()});
-
-   return newVal;
+   return (scope || this).vars[name].value = val;;
 }
 
-Environment.prototype.def = function (name, val, step) {
+Environment.prototype.def = function (name, val, step, type) {
   let valComp = val;
-  let valStr = val !== null ? val.toString() : 'undefined';
+  let valStr = this.format(val);
 
-  return this.vars[name] = {value: valComp, steps: [{step: step, value: valStr}]};
+  return this.vars[name] = {value: valComp, steps: [{step: step, value: valStr}], type: type};
+}
+
+Environment.prototype.format = function (val) {
+  let retVal;
+
+  if (Object.prototype.toString.call(val) === '[object Array]') {
+    // format array
+    retVal = '[';
+    if (val.length > 0) {
+      for (var i = 0; i < val.length; i++) {
+        retVal += this.format(val[i]) + ', ';
+      }
+      retVal = retVal.slice(0, -2);
+    }
+    retVal += ']';
+  } else if (Object.prototype.toString.call(val) === '[object Object]') {
+    // format object
+    retVal = '{'
+    for (var prop in val) {
+      retVal += prop + ': ' + this.format(val[prop]) + ', ';
+    }
+    retVal = retVal.slice(0, -2);
+    retVal += '}';
+  } else if (Object.prototype.toString.call(val) === '[object String]') {
+    // format string
+    retVal = '"' + val + '"';
+  } else if (val === null) {
+    // format null
+    retVal = 'null';
+  } else if (val === undefined) {
+    // format undefined
+    retVal = 'undefined';
+  } else {
+    // fallback
+    retVal = val.toString();
+  }
+
+  return retVal;
 }
 
 /**
@@ -125,30 +234,24 @@ Environment.prototype.def = function (name, val, step) {
  * TODO: Enable more than only 'function declarations'
  */
 
-function Cluster (functionDeclarationNode) {
+function Cluster (functionDeclarationNode, annotationNode) {
   this.env = new Environment();
   this.execution = [];
 
   // Add params to the environment
-  // TODO: Make params dynamic
-  this.env.def(functionDeclarationNode.params[0].name, 8, 0);
-  // this.env.def(functionDeclarationNode.params[0].name, "searchengine=http://www.google.com/search?q=$1\n" +
-  //           "spitefulness=9.7\n" +
-  //           "\n" +
-  //           "; comments are preceded by a semicolon...\n" +
-  //           "; each section concerns an individual enemy\n" +
-  //           "[larry]\n" +
-  //           "fullname=Larry Doe\n" +
-  //           "type=kindergarten bully\n" +
-  //           "website=http://www.geocities.com/CapeCanaveral/11451\n" +
-  //           "\n" +
-  //           "[gargamel]\n" +
-  //           "fullname=Gargamel\n" +
-  //           "type=evil sorcerer\n" +
-  //           "outputdir=/home/marijn/enemies/gargamel", 0);
+  this.iterParams(functionDeclarationNode.params, annotationNode);
 
   // Go to each statement in the block
   this.iterBlockStatements(functionDeclarationNode.body);
+}
+
+Cluster.prototype.iterParams = function (paramsArray, annotationNode) {
+  // TODO: Make params dynamic
+  // @param {Number} size [0, 10] = 8
+
+  for (var i = 0; i < annotationNode.params.length; i++) {
+    this.env.def(annotationNode.params[i].name, annotationNode.params[i].init, 0, "param");
+  }
 }
 
 Cluster.prototype.iter = function (node) {
@@ -158,9 +261,7 @@ Cluster.prototype.iter = function (node) {
       this.execution.push(node.loc.start.line);
 
       for (var i = 0; i < node.declarations.length; i++) {
-        let name = node.declarations[i].id.name;
-        let val = node.declarations[i].init === null ? null : this.evaluate(node.declarations[i].init, this.execution.length);
-        this.env.def(name, val, this.execution.length);
+        this.evaluate(node.declarations[i], this.execution.length);
       }
 
       break;
@@ -168,9 +269,9 @@ Cluster.prototype.iter = function (node) {
     case 'IfStatement':
       this.execution.push(node.loc.start.line);
 
-      if (this.evaluate(node.test) == true) {
+      if (this.evaluate(node.test, this.execution.length) === true) {
         this.iterBlockStatements(node.consequent);
-      } else if (this.evaluate(node.test) == false) {
+      } else if (this.evaluate(node.test, this.execution.length) === false) {
         if (node.alternate !== null) {
           this.iter(node.alternate);
         }
@@ -179,29 +280,27 @@ Cluster.prototype.iter = function (node) {
       break;
 
     case 'WhileStatement':
-      while (this.evaluate(node.test) === true) {
-        this.execution.push(node.loc.start.line);
-        this.iterBlockStatements(node.body);
-      }
-
       this.execution.push(node.loc.start.line);
+
+      while (this.evaluate(node.test, this.execution.length + 1) === true) {
+        this.iterBlockStatements(node.body);
+        this.execution.push(node.loc.start.line);
+      }
 
       break;
 
     case 'ForStatement':
+      this.execution.push(node.loc.start.line);
+
       for (var j = 0; j < node.init.declarations.length; j++) {
-        let name = node.init.declarations[j].id.name;
-        let val = node.init.declarations[j].init === null ? null : this.evaluate(node.init.declarations[j].init, this.execution.length);
-        this.env.def(name, val, this.execution.length);
+        this.evaluate(node.init.declarations[j], this.execution.length);
       }
 
-      while (this.evaluate(node.test) === true) {
-        this.execution.push(node.loc.start.line);
+      while (this.evaluate(node.test, this.execution.length) === true) {
         this.iterBlockStatements(node.body);
         this.evaluate(node.update, this.execution.length);
+        this.execution.push(node.loc.start.line);
       }
-
-      this.execution.push(node.loc.start.line);
 
       break;
 
@@ -215,12 +314,18 @@ Cluster.prototype.iter = function (node) {
     case 'ReturnStatement':
       this.execution.push(node.loc.start.line);
 
+      // the return statement is the only statement that changes the environment directly
       if (node.argument !== null) {
-        let nodeName = node.argument.name;
-        this.env.set(nodeName, this.env.get(nodeName), this.execution.length);
+        this.env.set(node.argument.name, this.evaluate(node.argument, this.execution.length), this.execution.length);
       }
 
       break;
+
+    case 'ContinueStatement':
+      this.execution.push(node.loc.start.line);
+
+      break;
+
 
     default:
       throw new Error('I don\'t know how to iterate ' + node.type);
@@ -241,6 +346,13 @@ Cluster.prototype.evaluate = function (node, step) {
 
     case 'Identifier':
       return this.env.get(node.name);
+
+    case 'VariableDeclarator':
+      let varName = node.id.name;
+      let varVal = node.init === null ? undefined : this.evaluate(node.init, step);
+      this.env.def(varName, varVal, step);
+
+      return undefined; // because JS also returns undefined
 
     case 'ArrayExpression':
       let array = [];
@@ -277,9 +389,11 @@ Cluster.prototype.evaluate = function (node, step) {
       if (node.prefix === false) {
         if (node.operator === '++') {
           retVal = updateExprVal++;
+          ++step;
         }
         else if (node.operator === '--') {
           retVal = updateExprVal--;
+          --step;
         }
       }
 
@@ -299,24 +413,34 @@ Cluster.prototype.evaluate = function (node, step) {
 
     case 'MemberExpression':
       if (node.computed === true) {
+        // computed (a[b]) member expression, property is an 'Expression'
         return this.evaluate(node.object)[this.evaluate(node.property, step)];
       } else if (node.computed === false) {
+        // static (a.b) member expression, property is an 'Identifier'
         return this.evaluate(node.object, step)[node.property.name];
       }
 
       break;
 
     case 'CallExpression':
-      if (node.callee.computed === true) { // computed (a[b]) member expression, property is an 'Expression'
+      if (node.callee.computed === true) {
+        // computed (a[b]) member expression, property is an 'Expression'
         // TODO: Implement computed expression
-      } else if (node.callee.computed === false) { // static (a.b) member expression, property is an 'Identifier'
+      } else if (node.callee.computed === false) {
+        // static (a.b) member expression, property is an 'Identifier'
         let callExprObj = this.evaluate(node.callee.object, step);
         let callExprProp = node.callee.property.name;
         let callExprParams = this.evaluate(node.arguments[0], step); // TODO: Allow more than one argument
         let retVal = callExprObj[callExprProp](callExprParams);
 
         if (Object.prototype.toString.call(callExprObj) === '[object Array]') {
-          this.env.set(node.callee.object.name, callExprObj, step);
+          if (node.callee.object.type === 'Identifier') {
+            // top level method i.e. a.push
+            this.env.set(node.callee.object.name, this.env.get(node.callee.object.name), step);
+          } else if (node.callee.object.type === 'MemberExpression') {
+            // first level method i.e. a.b.push
+            this.env.set(node.callee.object.object.name, this.env.get(node.callee.object.object.name), step);
+          }
         }
 
         return retVal;
@@ -393,61 +517,55 @@ Visualizer.prototype.markupCode = function (codeStr) {
 }
 
 Visualizer.prototype.markupState = function () {
-  let params = document.createElement('ol');
-  params.classList.add('stateParams');
-
-  let item = document.createElement('li');
-  item.textContent = 'uses size 8';
-
-  params.appendChild(item);
-
-  this.stateWrapper.appendChild(params);
-
   let self = this;
+
+  // Template
+
+  let paramsTemplate = '<ol class="stateParams">';
+  let valuesTemplate = '<ol class="stateValues">';
+
+  for (let name in this.env.vars) {
+    if (this.env.vars[name].type === 'param') {
+      paramsTemplate += '<li>' + name + '{{{ raw(state.params.' + name + '.val) }}}</li>';
+    } else {
+      valuesTemplate += '<li>' + name + '{{{ beautify(state.values.' + name + '.val) }}}</li>';
+    }
+  }
+
+  paramsTemplate += '</ol>';
+  valuesTemplate += '</ol>';
+
+  let ractiveTemplate = paramsTemplate + valuesTemplate;
+
+  // Data
+
+  let ractiveData = Object.create(null);
+
+  ractiveData.params = Object.create(null);
+  ractiveData.values = Object.create(null);
+
+  for (let name in this.env.vars) {
+    if (this.env.vars[name].type === 'param') {
+      ractiveData.params[name] = Object.create(null);
+      ractiveData.params[name].val = this.env.getAtStep(name, 1) // Using 1 gets the initial value
+    } else {
+      ractiveData.values[name] = Object.create(null);
+      ractiveData.values[name].val = this.env.getAtStep(name, 1) // Using 1 gets the initial value
+    }
+  }
+
+  // Ractive
 
   this.ractive = new Ractive({
     el: self.stateWrapper,
-    template:
-      '<ol class="stateParams">' +
-        '<li>uses size {{ params.size.val }}</li>' +
-      '</ol>' +
-      '<ol class="stateValues">' +
-        '<li>sets first to <span class="stateVal">{{ values.first.val }}</span></li>' +
-        '<li>sets second to <span class="stateVal">{{ values.second.val }}</span></li>' +
-        '<li>sets next to <span class="stateVal">{{ values.next.val }}</span></li>' +
-        '<li>sets count to <span class="stateVal">{{ values.count.val }}</span></li>' +
-        '<li>sets result to <span class="stateVal">{{ values.result.val }}</span></li>' +
-      '</ol>' +
-      '<ol class="stateReturns">' +
-        '<li>returns <span class="stateVal">{{ returns.result.val }}</span></li>' +
-      '</ol>',
+    template: ractiveTemplate,
     data: {
-      params: {
-        size: {
-          val: self.env.getAtStep('size', 1) // Using 1 gets the initial value
-        }
+      state: ractiveData,
+      raw: function (val) {
+        if (val !== undefined) return ' = <span class="stateVal">' + val + '</span>';
       },
-      values: {
-        first: {
-          val: self.env.getAtStep('first', 1)
-        },
-        second: {
-          val: self.env.getAtStep('second', 1)
-        },
-        next: {
-          val: self.env.getAtStep('next', 1)
-        },
-        count: {
-          val: self.env.getAtStep('count', 1)
-        },
-        result: {
-          val: self.env.getAtStep('result', 1)
-        }
-      },
-      returns: {
-        result: {
-          val: self.env.getAtStep('result', 1)
-        }
+      beautify: function (val) {
+        if (val !== undefined) return ' = <span class="stateVal">' + parser.beautify(val) + '</span>';
       }
     }
   });
@@ -620,21 +738,14 @@ UI.prototype.updateState = function () {
   let env = this.vis.getEnvironment();
   let step = Number(this.execSlider.value) + 1;
 
-  for (var value in ractive.get().values) {
+  for (let param in ractive.get().state.values) {
     // if (ractive.values.hasOwnProperty(value)) {}
-    ractive.set('values.' + value + '.val', env.getAtStep(value, step));
+    ractive.set('state.values.' + param + '.val', env.getAtStep(param, step));
   }
 
-  if (step === this.vis.getExecution().length) {
-    for (var retVal in ractive.get().returns) {
-      // if (ractive.values.hasOwnProperty(value)) {}
-      ractive.set('returns.' + retVal + '.val', env.getAtStep(retVal, step));
-    }
-  } else {
-    for (var retVal in ractive.get().returns) {
-      // if (ractive.values.hasOwnProperty(value)) {}
-      ractive.set('returns.' + retVal + '.val', '');
-    }
+  for (let value in ractive.get().state.values) {
+    // if (ractive.values.hasOwnProperty(value)) {}
+    ractive.set('state.values.' + value + '.val', env.getAtStep(value, step));
   }
 }
 
