@@ -11,15 +11,68 @@ console.log("INIT");
 
 function Parser (codeText) {
   this.codeStr = this.beautify(codeText);
-  this.ast = this.parse(this.codeStr);
+  this.ast = this.parseAST(this.codeStr);
+  this.annotations = this.parseComments(this.codeStr);
 }
 
 Parser.prototype.beautify = function (codeText) {
   return js_beautify(codeText);
 }
 
-Parser.prototype.parse = function (codeStr) {
+Parser.prototype.parseAST = function (codeStr) {
   return acorn.parse(codeStr, {sourceType: "script", locations: true});
+}
+
+Parser.prototype.parseComments = function (codeStr) {
+  let comments = [];
+
+  acorn.parse(codeStr, {
+    sourceType: "script",
+    locations: true,
+    onComment: comments // collect comments in Esprima's format
+  });
+
+  return this.parseAnnotations(comments);
+}
+
+Parser.prototype.parseAnnotations = function (comments) {
+  let annotations = [];
+
+  for (let i = 0; i < comments.length; i++) {
+
+    // Copy the location of the full comment (multiple lines in case of block comment)
+    let annotationNode = Object.create(null);
+    annotationNode.loc = comments[i].loc;
+    annotationNode.params = [];
+
+    // Parse for @param annotations
+    let lines = comments[i].value.split(/\r?\n/);
+
+    for (let j = 0; j < lines.length; j++) {
+      if (lines[j].indexOf('@param') > 0) {
+        let paramNode = Object.create(null);
+        let paramName = lines[j].substring(lines[j].indexOf('} ') + 2);
+        let paramVals = lines[j].substring(lines[j].indexOf('{') + 1, lines[j].indexOf('}')).split(', ');
+
+        paramNode.name = paramName;
+        paramNode.type = paramVals[0];
+
+        if (paramVals[0] === "Number") {
+          paramNode.init = Number(paramVals[1]);
+          paramNode.min = Number(paramVals[2]);
+          paramNode.max = Number(paramVals[3]);
+        } else if (paramVals[0] === "String") {
+          paramNode.init = eval(paramVals[1]);
+        }
+
+        annotationNode.params.push(paramNode);
+      }
+    }
+
+    annotations.push(annotationNode);
+  }
+
+  return annotations;
 }
 
 Parser.prototype.getCodeStr = function () {
@@ -30,22 +83,42 @@ Parser.prototype.getAST = function () {
   return this.ast;
 }
 
+Parser.prototype.getAnnotations = function () {
+  return this.annotations;
+}
+
 /**
  * WALKER
  *
- * Walks an abstract syntax tree and generates clusters.
+ * Walks an abstract syntax tree and generates clusters with annotations.
  */
 
 function Walker (parser) {
-  this.walk(parser.getAST());
+  this.walk(parser.getAST(), parser.getAnnotations());
 }
 
-Walker.prototype.walk = function (ast) {
+Walker.prototype.walk = function (ast, annotations) {
+  let self = this;
+
   acorn.walk.recursive(ast, [this], {
-    FunctionDeclaration: function(node, state/*, c*/) {
-      state[0].cluster = new Cluster(node);
+    FunctionDeclaration: function (functionNode, state/*, c*/) {
+      let annotationNode = self.findAnnotation(annotations, functionNode.loc);
+
+      state[0].cluster = new Cluster(functionNode, annotationNode);
     }
   });
+}
+
+Walker.prototype.findAnnotation = function (annotations, functionNodeLoc) {
+  let annotationNode;
+
+  for (var i = 0; i < annotations.length; i++) {
+    if (annotations[i].loc.end.line + 1 === functionNodeLoc.start.line) {
+      annotationNode = annotations[i];
+    }
+  }
+
+  return annotationNode;
 }
 
 Walker.prototype.getCluster = function () {
@@ -102,11 +175,9 @@ Environment.prototype.set = function (name, val, step) {
    // let's not allow defining globals from a nested environment
    if (!scope && this.parent) throw new Error('Undefined variable ' + name);
 
-   let newVal = (scope || this).vars[name].value = val;
-
    (scope || this).vars[name].steps.push({step: step, value: this.format(val)});
 
-   return newVal;
+   return (scope || this).vars[name].value = val;;
 }
 
 Environment.prototype.def = function (name, val, step, type) {
@@ -163,20 +234,24 @@ Environment.prototype.format = function (val) {
  * TODO: Enable more than only 'function declarations'
  */
 
-function Cluster (functionDeclarationNode) {
+function Cluster (functionDeclarationNode, annotationNode) {
   this.env = new Environment();
   this.execution = [];
 
   // Add params to the environment
-  this.parseAnnotations(functionDeclarationNode.params);
+  this.iterParams(functionDeclarationNode.params, annotationNode);
 
   // Go to each statement in the block
   this.iterBlockStatements(functionDeclarationNode.body);
 }
 
-Cluster.prototype.parseAnnotations = function (paramsArray) {
+Cluster.prototype.iterParams = function (paramsArray, annotationNode) {
   // TODO: Make params dynamic
-  this.env.def(paramsArray[0].name, 8, 0, "param");
+  // @param {Number} size [0, 10] = 8
+
+  for (var i = 0; i < annotationNode.params.length; i++) {
+    this.env.def(annotationNode.params[i].name, annotationNode.params[i].init, 0, "param");
+  }
 }
 
 Cluster.prototype.iter = function (node) {
@@ -207,7 +282,7 @@ Cluster.prototype.iter = function (node) {
     case 'WhileStatement':
       this.execution.push(node.loc.start.line);
 
-      while (this.evaluate(node.test, this.execution.length) === true) {
+      while (this.evaluate(node.test, this.execution.length + 1) === true) {
         this.iterBlockStatements(node.body);
         this.execution.push(node.loc.start.line);
       }
@@ -338,17 +413,21 @@ Cluster.prototype.evaluate = function (node, step) {
 
     case 'MemberExpression':
       if (node.computed === true) {
+        // computed (a[b]) member expression, property is an 'Expression'
         return this.evaluate(node.object)[this.evaluate(node.property, step)];
       } else if (node.computed === false) {
+        // static (a.b) member expression, property is an 'Identifier'
         return this.evaluate(node.object, step)[node.property.name];
       }
 
       break;
 
     case 'CallExpression':
-      if (node.callee.computed === true) { // computed (a[b]) member expression, property is an 'Expression'
+      if (node.callee.computed === true) {
+        // computed (a[b]) member expression, property is an 'Expression'
         // TODO: Implement computed expression
-      } else if (node.callee.computed === false) { // static (a.b) member expression, property is an 'Identifier'
+      } else if (node.callee.computed === false) {
+        // static (a.b) member expression, property is an 'Identifier'
         let callExprObj = this.evaluate(node.callee.object, step);
         let callExprProp = node.callee.property.name;
         let callExprParams = this.evaluate(node.arguments[0], step); // TODO: Allow more than one argument
@@ -447,7 +526,7 @@ Visualizer.prototype.markupState = function () {
 
   for (let name in this.env.vars) {
     if (this.env.vars[name].type === 'param') {
-      paramsTemplate += '<li>' + name + '{{{ beautify(state.params.' + name + '.val) }}}</li>';
+      paramsTemplate += '<li>' + name + '{{{ raw(state.params.' + name + '.val) }}}</li>';
     } else {
       valuesTemplate += '<li>' + name + '{{{ beautify(state.values.' + name + '.val) }}}</li>';
     }
@@ -482,7 +561,10 @@ Visualizer.prototype.markupState = function () {
     template: ractiveTemplate,
     data: {
       state: ractiveData,
-      beautify: function(val) {
+      raw: function (val) {
+        if (val !== undefined) return ' = <span class="stateVal">' + val + '</span>';
+      },
+      beautify: function (val) {
         if (val !== undefined) return ' = <span class="stateVal">' + parser.beautify(val) + '</span>';
       }
     }

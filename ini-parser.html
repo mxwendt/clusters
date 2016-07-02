@@ -22,19 +22,16 @@
             "fullname=Gargamel" +
             "type=evil sorcerer" +
             "outputdir=/home/marijn/enemies/gargamel";
-
-
-          -->
+  -->
   <pre id="code" class="default linenums prettyprint">
     /**
-     * @cluster
-     * @param {Number} string => ini
+     * @param {String, "searchengine=http://www.google.com/search?q=$1\r\nspitefulness=9.7\r\n\r\n; comments are preceded by a semicolon...\r\n; each section concerns an individual enemy\r\n[larry]\r\nfullname=Larry Doe\r\ntype=kindergarten bully\r\nwebsite=http://www.geocities.com/CapeCanaveral/11451\r\n\r\n[gargamel]\r\nfullname=Gargamel\r\ntype=evil sorcerer\r\noutputdir=/home/marijn/enemies/gargamel"} ini
      * @return {Array} result
      */
-    function parseINI(string) {
+    function parseINI(ini) {
       var currentSection = {name: null, fields: []};
       var categories = [currentSection];
-      var lines = string.split(/\r?\n/);
+      var lines = ini.split(/\r?\n/);
       var match;
 
       for (var i = 0; i < lines.length; i++) {
@@ -61,6 +58,6 @@
   <script type="text/javascript" src="node_modules/acorn/dist/walk.js" charset="utf-8"></script>
   <script type="text/javascript" src="node_modules/d3/d3.js" charset="utf-8"></script>
   <script type="text/javascript" src="lib/ractive.js" charset="utf-8"></script>
-  <script type="text/javascript" src="ini-parser.js" charset="utf-8"></script>
+  <script type="text/javascript" src="clusters.js" charset="utf-8"></script>
 </body>
 </html>
