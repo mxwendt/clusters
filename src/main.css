@@ -6,11 +6,20 @@ Wrapper
   margin-top: 30px;
 }
 
+.snippet:after {
+    content: "";
+    display: block;
+    clear: both;
+}
+
 .code, .data, .state {
   display: block;
+  max-width: 33%;
+  padding-top: 20px;
   margin-bottom: 50px;
   position: relative;
   float: left;
+  overflow-x: scroll;
 }
 
 /*------------------------------------------------------------------------------
@@ -209,7 +218,7 @@ Execution - Slider (UI)
 input.execSlider {
   margin: 0;
   position: absolute;
-  top: -7px;
+  top: 15px;
   left: 3px;
 }
 
