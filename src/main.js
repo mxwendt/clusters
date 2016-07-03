@@ -598,15 +598,15 @@ Visualizer.prototype.visualizeExecution = function () {
       .attr('width', 0)
       .attr('height', this.getH())
       .style('background-image', 'repeating-linear-gradient(180deg, rgba(248, 248, 248, 0.6), rgba(248, 248, 248, 0.6) ' +
-        (this.getH() / this.getLineCount()) + 'px, rgba(255, 255, 255, 0.6) ' + (this.getH() / this.getLineCount()) + 'px, rgba(255, 255, 255, 0.6) ' + (this.getH() / this.getLineCount() * 2) + 'px)');
+        self.getLineH() + 'px, rgba(255, 255, 255, 0.6) ' + self.getLineH() + 'px, rgba(255, 255, 255, 0.6) ' + (self.getLineH() * 2) + 'px)');
 
   let xAxis = svg.append("g")
     .attr("class", "axis");
 
   svg.attr('width', this.getW());
 
-  let x = d3.scale.ordinal().domain(d3.range(this.execution.length + 2)).rangePoints([0, this.getW()]);
-  let y = d3.scale.ordinal().domain(d3.range(this.getLineCount() + 1)).rangePoints([0, this.getH()]);
+  let x = d3.scale.ordinal().domain(d3.range(this.execution.length + 2)).rangePoints([0, (this.getExecution().length + 2) * 10]);
+  let y = d3.scale.ordinal().domain(d3.range(this.getLineCount())).rangePoints([0, (this.getLineCount() - 1) * this.getLineH()]);
 
   // JOIN new data with old elements
   this.dots = svg.selectAll('.dot')
@@ -617,13 +617,13 @@ Visualizer.prototype.visualizeExecution = function () {
 
   // UPDATE old elements present in new data
   this.dots.attr('cx', function(d, i) { return x(i + 1); })
-      .attr('cy', function(d, i) { return y(d - 1) + (self.getH() / self.getLineCount() / 2); });
+      .attr('cy', function(d, i) { return y(d) - Math.ceil(self.getLineH() / 2); });
 
   // ENTER new elements present in new data
   this.dots.enter().append('circle')
       .attr('class', function(d, i) { return 'dot' + ' ' + d; })
       .attr('cx', function(d, i) { return x(i + 1); })
-      .attr('cy', function(d, i) { return y(d - 1) + (self.getH() / self.getLineCount() / 2); })
+      .attr('cy', function(d, i) { return y(d) - Math.ceil(self.getLineH() / 2); })
       .attr('r', 4);
 
   this.dots.on('mouseover', function() {
@@ -653,7 +653,11 @@ Visualizer.prototype.getW = function () {
 }
 
 Visualizer.prototype.getH = function () {
-  return this.codeWrapper.clientHeight;
+  return this.getLineCount() * this.getLineH();
+}
+
+Visualizer.prototype.getLineH = function () {
+  return this.codeWrapper.querySelector('ol.linenums').children[0].clientHeight;
 }
 
 Visualizer.prototype.getLineCount = function () {
