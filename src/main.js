@@ -180,11 +180,11 @@ Environment.prototype.set = function (name, val, step) {
    return (scope || this).vars[name].value = val;;
 }
 
-Environment.prototype.def = function (name, val, step, type) {
+Environment.prototype.def = function (name, val, step, propObj) {
   let valComp = val;
   let valStr = this.format(val);
 
-  return this.vars[name] = {value: valComp, steps: [{step: step, value: valStr}], type: type};
+  return this.vars[name] = {value: valComp, steps: [{step: step, value: valStr}], properties: propObj};
 }
 
 Environment.prototype.format = function (val) {
@@ -246,11 +246,10 @@ function Cluster (functionDeclarationNode, annotationNode) {
 }
 
 Cluster.prototype.iterParams = function (paramsArray, annotationNode) {
-  // TODO: Make params dynamic
-  // @param {Number} size [0, 10] = 8
-
   for (var i = 0; i < annotationNode.params.length; i++) {
-    this.env.def(annotationNode.params[i].name, annotationNode.params[i].init, 0, "param");
+    let paramObj = annotationNode.params[0];
+
+    this.env.def(annotationNode.params[i].name, annotationNode.params[i].init, 0, paramObj);
   }
 }
 
@@ -525,8 +524,25 @@ Visualizer.prototype.markupState = function () {
   let valuesTemplate = '<ol class="stateValues">';
 
   for (let name in this.env.vars) {
-    if (this.env.vars[name].type === 'param') {
-      paramsTemplate += '<li>' + name + '{{{ raw(state.params.' + name + '.val) }}}</li>';
+    console.log(this.env.vars[name]);
+    console.log(this.env);
+    if (this.env.vars[name].properties !== undefined) {
+      // parameter value
+      if (this.env.vars[name].properties.type === 'Boolean') {
+        // TODO: Create inputs for boolean parameter => checkbox
+      } else if (this.env.vars[name].properties.type === 'Number') {
+        paramsTemplate += '<li>' + this.env.vars[name].properties.name + '{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}';
+        paramsTemplate += '<input type="range" min="' + this.env.vars[name].properties.min + '" max="' + this.env.vars[name].properties.max + '" value="{{state.params.' + this.env.vars[name].properties.name + '.val}}"></li>';
+      } else if (this.env.vars[name].properties.type === 'String') {
+        paramsTemplate += '<li>' + this.env.vars[name].properties.name + '{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}';
+        paramsTemplate += '<select>';
+        paramsTemplate += '<option value="{{ pure(state.params.' + this.env.vars[name].properties.name + '.val) }}" selected>Example 1</option>';
+        paramsTemplate += '</select></li>';
+      } else if (this.env.vars[name].properties.type === 'Array') {
+        // TODO: Create inputs for array parameter => select
+      } else if (this.env.vars[name].properties.type === 'Object') {
+        // TODO: Create inputs for object parameter => depending on primitive type
+      }
     } else {
       valuesTemplate += '<li>' + name + '{{{ beautify(state.values.' + name + '.val) }}}</li>';
     }
@@ -545,7 +561,7 @@ Visualizer.prototype.markupState = function () {
   ractiveData.values = Object.create(null);
 
   for (let name in this.env.vars) {
-    if (this.env.vars[name].type === 'param') {
+    if (this.env.vars[name].properties !== undefined) {
       ractiveData.params[name] = Object.create(null);
       ractiveData.params[name].val = this.env.getAtStep(name, 1) // Using 1 gets the initial value
     } else {
@@ -566,6 +582,9 @@ Visualizer.prototype.markupState = function () {
       },
       beautify: function (val) {
         if (val !== undefined) return ' = <span class="stateVal">' + parser.beautify(val) + '</span>';
+      },
+      pure: function (val) {
+        if (val !== undefined && typeof(val) === 'string') return val.substring(1, val.length - 1);
       }
     }
   });
