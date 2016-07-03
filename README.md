@@ -14,15 +14,25 @@ run 'http-server' on the command line
 
 # Rules of annotation
 
-The rules extend the rules of annotating functions defined by the JSDoc markup
-language (http://usejsdoc.org/).
+The rules extend the rules of annotating function parameters as defined by the
+JSDoc markup language (http://usejsdoc.org/) and how it is used by the
+enhancement.
 
 Boolean value
 * {type, initial value}
 * value is a `boolean`
-* editable as checkbox
+* turns into checkbox
 
 ```javascript
+// before:
+
+/**
+ * @param {Boolean} foo
+ */
+function fubar(foo) {}
+
+// after:
+
 /**
  * @param {Boolean, true} foo
  */
@@ -32,9 +42,18 @@ function fubar(foo) {}
 Number value
 * {type, initial value, min value, max value}
 * value is a `number`
-* editable as range input
+* turns into range input
 
 ```javascript
+// before:
+
+/**
+ * @param {Number} foo
+ */
+function fubar(foo) {}
+
+// after:
+
 /**
  * @param {Number, 8, 0, 10} foo
  */
@@ -44,9 +63,19 @@ function fubar(foo) {}
 String value
 * {type, initial value [, optional alternative values]}
 * value is a `string`
-* editable as select dropdown
+* turns into select dropdown
 
 ```javascript
+// before:
+
+/**
+ * @param {String} foo
+ */
+function fubar(foo) {}
+
+
+// after:
+
 /**
  * @param {String, "blah-blah", "bluh-bluh", "blih-blih"} foo
  */
@@ -56,9 +85,18 @@ function fubar(foo) {}
 Array value
 * {type, initial value [, optional alternative values]}
 * value is an `array`
-* editable as select dropdown
+* turns into select dropdown
 
 ```javascript
+// before:
+
+/**
+ * @param {Array} foo
+ */
+function fubar(foo) {}
+
+// after:
+
 /**
  * @param {Array, [0, 1, 2, 3, 4, 5], [0, 2, 4, 6, 8, 10], [3, 2, 1]} foo
  */
@@ -66,9 +104,18 @@ function fubar(foo) {}
 ```
 
 Object values
-* editable according to type
+* turns intocording to type
 
 ```javascript
+// before:
+
+/**
+ * @param {Object} foo
+ */
+function fubar(foo) {}
+
+// after:
+
 /**
  * @param {Number, 8, 0, 10} foo.bar
  * @param {String, ”blah-blah“} foo.baz
