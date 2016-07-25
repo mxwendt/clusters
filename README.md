@@ -104,7 +104,8 @@ function fubar(foo) {}
 ```
 
 Object values
-* turns intocording to type
+* {type, initial value}
+* **or** turns into according to type
 
 ```javascript
 // before:
@@ -117,13 +118,20 @@ function fubar(foo) {}
 // after:
 
 /**
+ * @param {Boolean, true} foo.thud
  * @param {Number, 8, 0, 10} foo.bar
  * @param {String, ”blah-blah“} foo.baz
- * @param {Boolean, true} foo.thud
  * @param {Array, [0, 1, 2, 3, 4,5]} foo.qux
+ * @param {Object, SomeObject} quux
+ *
+ * Dot notation:
+ * @param {Object} foo.quux
+ *
+ * Brackets notation:
+ * @param {Object} foo["quux"]
  *
  * Nested:
- * @param {Number, 8, 0, 10} foo.plugh.bar
+ * @param {Object} foo.plugh.quux
  */
 function fubar(foo) {}
 ```
