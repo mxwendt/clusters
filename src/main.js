@@ -17,11 +17,11 @@ function Parser (codeText) {
 
 Parser.prototype.beautify = function (codeText) {
   return js_beautify(codeText);
-}
+};
 
 Parser.prototype.parseAST = function (codeStr) {
   return acorn.parse(codeStr, {sourceType: "script", locations: true});
-}
+};
 
 Parser.prototype.parseComments = function (codeStr) {
   let comments = [];
@@ -33,7 +33,7 @@ Parser.prototype.parseComments = function (codeStr) {
   });
 
   return this.parseAnnotations(comments);
-}
+};
 
 Parser.prototype.parseAnnotations = function (comments) {
   let annotations = [];
@@ -86,19 +86,19 @@ Parser.prototype.parseAnnotations = function (comments) {
   }
 
   return annotations;
-}
+};
 
 Parser.prototype.getCodeStr = function () {
   return this.codeStr;
-}
+};
 
 Parser.prototype.getAST = function () {
   return this.ast;
-}
+};
 
 Parser.prototype.getAnnotations = function () {
   return this.annotations;
-}
+};
 
 /**
  * WALKER
@@ -120,7 +120,7 @@ Walker.prototype.walk = function (ast, annotations) {
       state[0].cluster = new Cluster(functionNode, annotationNode);
     }
   });
-}
+};
 
 Walker.prototype.findAnnotation = function (annotations, functionNodeLoc) {
   let annotationNode;
@@ -132,11 +132,11 @@ Walker.prototype.findAnnotation = function (annotations, functionNodeLoc) {
   }
 
   return annotationNode;
-}
+};
 
 Walker.prototype.getCluster = function () {
   return this.cluster;
-}
+};
 
 /**
  * ENVIRONMENT
@@ -152,7 +152,7 @@ function Environment (parent) {
 
 Environment.prototype.extend = function () {
   return new Environment(this);
-}
+};
 
 Environment.prototype.lookup = function (name) {
   var scope = this;
@@ -160,12 +160,12 @@ Environment.prototype.lookup = function (name) {
     if (Object.prototype.hasOwnProperty.call(scope.vars, name)) return scope;
     scope = scope.parent;
   }
-}
+};
 
 Environment.prototype.get = function (name) {
   if (name in this.vars) return this.vars[name].value;
   throw new Error('Undefined variable ' + name);
-}
+};
 
 Environment.prototype.getAtStep = function (name, step) {
   if (name in this.vars) {
@@ -180,7 +180,7 @@ Environment.prototype.getAtStep = function (name, step) {
   }
 
   throw new Error('Undefined variable ' + name);
-}
+};
 
 Environment.prototype.set = function (name, val, step) {
    var scope = this.lookup(name);
@@ -191,14 +191,14 @@ Environment.prototype.set = function (name, val, step) {
    (scope || this).vars[name].steps.push({step: step, value: this.format(val)});
 
    return (scope || this).vars[name].value = val;;
-}
+};
 
 Environment.prototype.def = function (name, val, step, propObj) {
   let valComp = val;
   let valStr = this.format(val);
 
   return this.vars[name] = {value: valComp, steps: [{step: step, value: valStr}], properties: propObj};
-}
+};
 
 Environment.prototype.format = function (val) {
   let retVal;
@@ -215,9 +215,9 @@ Environment.prototype.format = function (val) {
     retVal += ']';
   } else if (Object.prototype.toString.call(val) === '[object Object]') {
     // format object
-    retVal = '{'
+    retVal = '{';
 
-    for (var prop in val) {
+    for (let prop in val) {
       retVal += prop + ': ' + this.format(val[prop]) + ', ';
     }
 
@@ -241,7 +241,7 @@ Environment.prototype.format = function (val) {
   }
 
   return retVal;
-}
+};
 
 /**
  * CLUSTER
@@ -269,7 +269,7 @@ Cluster.prototype.iterParams = function (paramsArray, annotationNode) {
 
     this.env.def(annotationNode.params[i].name, annotationNode.params[i].init, 0, paramObj);
   }
-}
+};
 
 Cluster.prototype.iter = function (node) {
   switch (node.type) {
@@ -347,13 +347,13 @@ Cluster.prototype.iter = function (node) {
     default:
       throw new Error('I don\'t know how to iterate ' + node.type);
   }
-}
+};
 
 Cluster.prototype.iterBlockStatements = function (blockStatementsNode) {
   for (var i = 0; i < blockStatementsNode.body.length; i++) {
     this.iter(blockStatementsNode.body[i]);
   }
-}
+};
 
 Cluster.prototype.evaluate = function (node, step) {
   switch (node.type) {
@@ -468,15 +468,15 @@ Cluster.prototype.evaluate = function (node, step) {
     default:
       throw new Error('I don\'t know how to evaluate ' + node.type);
   }
-}
+};
 
 Cluster.prototype.getExecution = function () {
   return this.execution;
-}
+};
 
 Cluster.prototype.getEnv = function () {
   return this.env;
-}
+};
 
 /**
  * VISUALIZER
@@ -516,7 +516,7 @@ Visualizer.prototype.markupWrapper = function () {
   this.wrapper.appendChild(this.stateWrapper);
 
   document.querySelector('body').appendChild(this.wrapper);
-}
+};
 
 Visualizer.prototype.markupCode = function (codeStr) {
   let pre = document.createElement('pre');
@@ -531,7 +531,7 @@ Visualizer.prototype.markupCode = function (codeStr) {
 
   // Pretty print the beautified code (theme copied from Stack Overflow)
   prettyPrint();
-}
+};
 
 Visualizer.prototype.markupState = function () {
   let self = this;
@@ -580,13 +580,13 @@ Visualizer.prototype.markupState = function () {
   for (let name in this.env.vars) {
     if (this.env.vars[name].properties !== undefined) {
       ractiveData.params[name] = Object.create(null);
-      ractiveData.params[name].val = this.env.getAtStep(name, 1) // Using 1 gets the initial value
+      ractiveData.params[name].val = this.env.getAtStep(name, 1); // Using 1 gets the initial value
       if (this.env.vars[name].properties.type === "Object") {
         ractiveData.params[name].constructor = this.env.vars[name].properties.constructor;
       }
     } else {
       ractiveData.values[name] = Object.create(null);
-      ractiveData.values[name].val = this.env.getAtStep(name, 1) // Using 1 gets the initial value
+      ractiveData.values[name].val = this.env.getAtStep(name, 1); // Using 1 gets the initial value
     }
   }
 
@@ -613,7 +613,7 @@ Visualizer.prototype.markupState = function () {
       }
     }
   });
-}
+};
 
 Visualizer.prototype.visualizeExecution = function () {
   let self = this;
@@ -671,47 +671,47 @@ Visualizer.prototype.visualizeExecution = function () {
     .orient('top');
 
   xAxis.call(axis);
-}
+};
 
 Visualizer.prototype.getW = function () {
   return (this.execution.length + 2) * 10;
-}
+};
 
 Visualizer.prototype.getH = function () {
   return this.getLineCount() * this.getLineH();
-}
+};
 
 Visualizer.prototype.getLineH = function () {
   return this.codeWrapper.querySelector('ol.linenums').children[0].clientHeight;
-}
+};
 
 Visualizer.prototype.getLineCount = function () {
   return this.codeWrapper.querySelector('ol.linenums').children.length;
-}
+};
 
 Visualizer.prototype.getDataWrapper = function () {
   return this.dataWrapper;
-}
+};
 
 Visualizer.prototype.getCodeWrapper = function () {
   return this.codeWrapper;
-}
+};
 
 Visualizer.prototype.getExecution = function () {
   return this.execution;
-}
+};
 
 Visualizer.prototype.getDots = function () {
   return this.dots;
-}
+};
 
 Visualizer.prototype.getRactive = function () {
   return this.ractive;
-}
+};
 
 Visualizer.prototype.getEnvironment = function () {
   return this.env;
-}
+};
 
 /**
  * UI
@@ -740,7 +740,7 @@ UI.prototype.addExecutionSlider = function () {
 
   this.highlightLine();
   this.highlightDot();
-}
+};
 
 UI.prototype.highlightLine = function () {
   this.unhighlightLine();
@@ -749,7 +749,7 @@ UI.prototype.highlightLine = function () {
   let line = this.vis.getCodeWrapper().querySelector('ol.linenums').children[this.vis.getExecution()[step] - 1];
 
   line.classList.add('is-highlighted');
-}
+};
 
 UI.prototype.unhighlightLine = function () {
   let lines = this.vis.getCodeWrapper().querySelector('ol.linenums').children;
@@ -759,7 +759,7 @@ UI.prototype.unhighlightLine = function () {
       lines[i].classList.remove('is-highlighted');
     }
   }
-}
+};
 
 UI.prototype.highlightDot = function () {
   let self = this;
@@ -771,7 +771,7 @@ UI.prototype.highlightDot = function () {
       this.classList.add('is-active');
     }
   });
-}
+};
 
 UI.prototype.unhighlightDot = function () {
   this.vis.getDots().each(function(d, i) {
@@ -779,7 +779,7 @@ UI.prototype.unhighlightDot = function () {
       this.classList.remove('is-active');
     }
   });
-}
+};
 
 UI.prototype.updateState = function () {
   let ractive = this.vis.getRactive();
@@ -795,7 +795,7 @@ UI.prototype.updateState = function () {
     // if (ractive.values.hasOwnProperty(value)) {}
     ractive.set('state.values.' + value + '.val', env.getAtStep(value, step));
   }
-}
+};
 
 UI.prototype.onExecutionSliderInput = function (e) {
   e.stopPropagation();
@@ -803,11 +803,11 @@ UI.prototype.onExecutionSliderInput = function (e) {
   this.highlightLine();
   this.highlightDot();
   this.updateState();
-}
+};
 
 UI.prototype.getExecSlider = function () {
   return this.execSlider;
-}
+};
 
 
 /**
