@@ -48,6 +48,9 @@ Parser.prototype.parseAnnotations = function (comments) {
     // Parse for @param annotations
     let lines = comments[i].value.split(/\r?\n/);
 
+    // Empty object placeholder
+    let obj = Object.create(null);
+
     for (let j = 0; j < lines.length; j++) {
       if (lines[j].indexOf('@param') > 0) {
         let paramNode = Object.create(null);
@@ -57,12 +60,22 @@ Parser.prototype.parseAnnotations = function (comments) {
         paramNode.name = paramName;
         paramNode.type = paramVals[0];
 
-        if (paramVals[0] === "Number") {
+        if (paramVals[0] === "Boolean") {
+          paramNode.init = Boolean(paramVals[1]);
+        } else if (paramVals[0] === "Number") {
           paramNode.init = Number(paramVals[1]);
           paramNode.min = Number(paramVals[2]);
           paramNode.max = Number(paramVals[3]);
         } else if (paramVals[0] === "String") {
+          // TODO: Allow for multiple variabtions of strings, see README
           paramNode.init = eval(paramVals[1]);
+        } else if (paramVals[0] === "Array") {
+          // TODO: Allow for multiple variabtions of arrays, see README
+          paramNode.init = eval(paramVals[1]);
+        } else if (paramVals[0] === "Object") {
+          // TODO: Implement object parameters
+          paramNode.init = Object.create(null);
+          paramNode.constructor = paramVals[1];
         }
 
         annotationNode.params.push(paramNode);
@@ -203,10 +216,15 @@ Environment.prototype.format = function (val) {
   } else if (Object.prototype.toString.call(val) === '[object Object]') {
     // format object
     retVal = '{'
+
     for (var prop in val) {
       retVal += prop + ': ' + this.format(val[prop]) + ', ';
     }
-    retVal = retVal.slice(0, -2);
+
+    if (! isObjectEmpty(val)) {
+      retVal = retVal.slice(0, -2);
+    }
+
     retVal += '}';
   } else if (Object.prototype.toString.call(val) === '[object String]') {
     // format string
@@ -524,8 +542,6 @@ Visualizer.prototype.markupState = function () {
   let valuesTemplate = '<ol class="stateValues">';
 
   for (let name in this.env.vars) {
-    console.log(this.env.vars[name]);
-    console.log(this.env);
     if (this.env.vars[name].properties !== undefined) {
       // parameter value
       if (this.env.vars[name].properties.type === 'Boolean') {
@@ -542,6 +558,7 @@ Visualizer.prototype.markupState = function () {
         // TODO: Create inputs for array parameter => select
       } else if (this.env.vars[name].properties.type === 'Object') {
         // TODO: Create inputs for object parameter => depending on primitive type
+        paramsTemplate += '<li>' + this.env.vars[name].properties.name + '{{{ rawObj(state.params.' + this.env.vars[name].properties.name + '.val, state.params.' + this.env.vars[name].properties.name + '.constructor) }}}';
       }
     } else {
       valuesTemplate += '<li>' + name + '{{{ beautify(state.values.' + name + '.val) }}}</li>';
@@ -564,11 +581,16 @@ Visualizer.prototype.markupState = function () {
     if (this.env.vars[name].properties !== undefined) {
       ractiveData.params[name] = Object.create(null);
       ractiveData.params[name].val = this.env.getAtStep(name, 1) // Using 1 gets the initial value
+      if (this.env.vars[name].properties.type === "Object") {
+        ractiveData.params[name].constructor = this.env.vars[name].properties.constructor;
+      }
     } else {
       ractiveData.values[name] = Object.create(null);
       ractiveData.values[name].val = this.env.getAtStep(name, 1) // Using 1 gets the initial value
     }
   }
+
+  console.log(ractiveData);
 
   // Ractive
 
@@ -579,6 +601,9 @@ Visualizer.prototype.markupState = function () {
       state: ractiveData,
       raw: function (val) {
         if (val !== undefined) return ' = <span class="stateVal">' + val + '</span>';
+      },
+      rawObj: function (val, constructor) {
+        if (val !== undefined) return ' = <span class="stateVal"><span class="typ">' + constructor  + '</span> ' + val + '</span>';
       },
       beautify: function (val) {
         if (val !== undefined) return ' = <span class="stateVal">' + parser.beautify(val) + '</span>';
