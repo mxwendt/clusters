@@ -784,6 +784,20 @@ UI.prototype.getExecSlider = function () {
   return this.execSlider;
 }
 
+
+/**
+ * Utils
+ */
+
+function isObjectEmpty (obj) {
+  for(var key in obj) {
+    if(obj.hasOwnProperty(key)){
+      return false;
+    }
+  }
+  return true;
+}
+
 //! INIT .......................................................................
 
 // Get the code as a string
