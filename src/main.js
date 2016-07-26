@@ -48,34 +48,34 @@ Parser.prototype.parseAnnotations = function (comments) {
     // Parse for @param annotations
     let lines = comments[i].value.split(/\r?\n/);
 
-    // Empty object placeholder
+    // Create empty object placeholder
     let obj = Object.create(null);
 
     for (let j = 0; j < lines.length; j++) {
       if (lines[j].indexOf('@param') > 0) {
         let paramNode = Object.create(null);
-        let paramName = lines[j].substring(lines[j].indexOf('} ') + 2);
-        let paramVals = lines[j].substring(lines[j].indexOf('{') + 1, lines[j].indexOf('}')).split(', ');
+        paramNode.type = lines[j].substring(lines[j].indexOf('{') + 1, lines[j].indexOf('}'));
+        paramNode.name = lines[j].substring(lines[j].indexOf('} ') + 2, lines[j].indexOf('=') - 1);
+        paramNode.vals = lines[j].substring(lines[j].indexOf('=') + 1).trim().split(', ');
 
-        paramNode.name = paramName;
-        paramNode.type = paramVals[0];
+        console.log(paramNode);
 
-        if (paramVals[0] === "Boolean") {
-          paramNode.init = Boolean(paramVals[1]);
-        } else if (paramVals[0] === "Number") {
-          paramNode.init = Number(paramVals[1]);
-          paramNode.min = Number(paramVals[2]);
-          paramNode.max = Number(paramVals[3]);
-        } else if (paramVals[0] === "String") {
+        if (paramNode.type === "Boolean") {
+          paramNode.init = Boolean(paramNode.vals[0]);
+        } else if (paramNode.type === "Number") {
+          paramNode.init = Number(paramNode.vals[0]);
+          paramNode.min = Number(paramNode.vals[1]);
+          paramNode.max = Number(paramNode.vals[2]);
+        } else if (paramNode.type === "String") {
           // TODO: Allow for multiple variabtions of strings, see README
-          paramNode.init = eval(paramVals[1]);
-        } else if (paramVals[0] === "Array") {
+          paramNode.init = eval(paramNode.vals[0]);
+        } else if (paramNode.type === "Array") {
           // TODO: Allow for multiple variabtions of arrays, see README
-          paramNode.init = eval(paramVals[1]);
-        } else if (paramVals[0] === "Object") {
+          paramNode.init = eval(paramNode.vals[0]);
+        } else if (paramNode.type === "Object") {
           // TODO: Implement object parameters
           paramNode.init = Object.create(null);
-          paramNode.constructor = paramVals[1];
+          paramNode.constructor = paramNode.vals[0];
         }
 
         annotationNode.params.push(paramNode);

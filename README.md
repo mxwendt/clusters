@@ -19,7 +19,7 @@ JSDoc markup language (http://usejsdoc.org/) and how it is used by the
 enhancement.
 
 Boolean value
-* {type, initial value}
+* {type} name = initial value
 * value is a `boolean`
 * turns into checkbox
 
@@ -34,13 +34,13 @@ function fubar(foo) {}
 // after:
 
 /**
- * @param {Boolean, true} foo
+ * @param {Boolean} foo = true
  */
 function fubar(foo) {}
 ```
 
 Number value
-* {type, initial value, min value, max value}
+* {type} name = initial value, min value, max value
 * value is a `number`
 * turns into range input
 
@@ -55,13 +55,13 @@ function fubar(foo) {}
 // after:
 
 /**
- * @param {Number, 8, 0, 10} foo
+ * @param {Number} foo = 8, 0, 10
  */
 function fubar(foo) {}
 ```
 
 String value
-* {type, initial value [, optional alternative values]}
+* {type} name = initial value [, optional alternative values]
 * value is a `string`
 * turns into select dropdown
 
@@ -77,13 +77,13 @@ function fubar(foo) {}
 // after:
 
 /**
- * @param {String, "blah-blah", "bluh-bluh", "blih-blih"} foo
+ * @param {String} foo = "blah-blah", "bluh-bluh", "blih-blih"
  */
 function fubar(foo) {}
 ```
 
 Array value
-* {type, initial value [, optional alternative values]}
+* {type} name = initial value [, optional alternative values]
 * value is an `array`
 * turns into select dropdown
 
@@ -98,13 +98,13 @@ function fubar(foo) {}
 // after:
 
 /**
- * @param {Array, [0, 1, 2, 3, 4, 5], [0, 2, 4, 6, 8, 10], [3, 2, 1]} foo
+ * @param {Array} foo = [0, 1, 2, 3, 4, 5], [0, 2, 4, 6, 8, 10], [3, 2, 1]
  */
 function fubar(foo) {}
 ```
 
 Object values
-* {type, initial value}
+* {type} name = initial value
 * **or** turns into according to type
 
 ```javascript
@@ -118,11 +118,11 @@ function fubar(foo) {}
 // after:
 
 /**
- * @param {Boolean, true} foo.thud
- * @param {Number, 8, 0, 10} foo.bar
- * @param {String, ”blah-blah“} foo.baz
- * @param {Array, [0, 1, 2, 3, 4,5]} foo.qux
- * @param {Object, SomeObject} quux
+ * @param {Boolean} foo.thud = true
+ * @param {Number} foo.bar = 8, 0, 10
+ * @param {String} foo.baz = ”blah-blah“
+ * @param {Array} foo.qux = [0, 1, 2, 3, 4, 5]
+ * @param {Object} quux = SomeObject
  *
  * Dot notation:
  * @param {Object} foo.quux
@@ -139,5 +139,4 @@ function fubar(foo) {}
 The values are all editable by default.
 
 The naming of the variables in the object values only annotate values that are
-needed for the function to work, not the whole object. The values are made up of
-the other values.
+needed for the function to work, not the whole object. The values are made up of other types.
