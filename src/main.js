@@ -208,7 +208,6 @@ Environment.prototype.set = function (name, val, step) {
   // let's not allow defining globals from a nested environment
   if (!scope && this.parent) throw new Error('Undefined variable ' + name);
 
-
   (scope || this).vars[name].steps.push({step: step, value: this.format(val)});
 
   return (scope || this).vars[name].value = val;
@@ -478,8 +477,6 @@ Cluster.prototype.evaluate = function (node, step) {
         return this.evaluate(node.object, step)[node.property.name];
       }
 
-      break;
-
     case 'CallExpression':
       if (node.callee.computed === true) {
         // computed (a[b]) member expression, property is an 'Expression'
@@ -494,10 +491,10 @@ Cluster.prototype.evaluate = function (node, step) {
         if (Object.prototype.toString.call(callExprObj) === '[object Array]') {
           if (node.callee.object.type === 'Identifier') {
             // top level method i.e. a.push
-            this.env.set(node.callee.object.name, this.env.get(node.callee.object.name));
+            this.env.set(node.callee.object.name, this.env.get(node.callee.object.name), step);
           } else if (node.callee.object.type === 'MemberExpression') {
             // first level method i.e. a.b.push
-            this.env.set(node.callee.object.object.name, this.env.get(node.callee.object.object.name));
+            this.env.set(node.callee.object.object.name, this.env.get(node.callee.object.object.name), step);
           }
         }
 
