@@ -7,27 +7,11 @@
   <link rel="stylesheet" href="../src/main.css">
 </head>
 <body>
-  <!--
-  var ini = "searchengine=http://www.google.com/search?q=$1" +
-            "spitefulness=9.7" +
-            "" +
-            "; comments are preceded by a semicolon..." +
-            "; each section concerns an individual enemy" +
-            "[larry]" +
-            "fullname=Larry Doe" +
-            "type=kindergarten bully" +
-            "website=http://www.geocities.com/CapeCanaveral/11451" +
-            "" +
-            "[gargamel]" +
-            "fullname=Gargamel" +
-            "type=evil sorcerer" +
-            "outputdir=/home/marijn/enemies/gargamel";
-  -->
   <pre id="code" class="default linenums prettyprint">
-    <!-- /**
-     * @param {Object, Wall} legend['#']
-     * @param {Object, BouncingCritter} legend['o']
-     * @param {String, "#", "o", " "} ch
+    /**
+     * @param {Object} legend['#'] = {}
+     * @param {Object} legend['o'] = {}
+     * @param {String} ch = "#", "o", " "
      */
     function elementFromChar(legend, ch) {
         if (ch == ' ') {
@@ -36,13 +20,6 @@
         var element = new legend[ch]();
         element.originChar = ch;
         return element;
-    } -->
-
-    /**
-     * @param {Object} legend["#"] = Wall
-     */
-    function fubar(legend) {
-      var temp = legend;
     }
   </pre>
   <script type="text/javascript" src="../node_modules/js-beautify/js/lib/beautify.js" charset="utf-8"></script>
