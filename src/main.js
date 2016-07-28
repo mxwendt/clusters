@@ -37,46 +37,68 @@ Parser.prototype.parseAnnotations = function (comments) {
   let annotations = [];
 
   for (let i = 0; i < comments.length; i++) {
+    if (comments[i].type === 'Line') continue;
 
-    // Copy the location of the full comment (multiple lines in case of block comment)
     let annotationNode = Object.create(null);
-    annotationNode.loc = comments[i].loc;
-    annotationNode.params = [];
+    annotationNode.loc = comments[i].loc; // Copy the location of the full comment (multiple lines in case of block comment)
+    annotationNode.params = []; // Empty array for the @param parameters
 
-    // Parse for @param annotations
     let lines = comments[i].value.split(/\r?\n/);
-
-    // Create empty object placeholder
-    let obj = Object.create(null);
 
     for (let j = 0; j < lines.length; j++) {
       if (lines[j].indexOf('@param') > 0) {
         let paramNode = Object.create(null);
         paramNode.type = lines[j].substring(lines[j].indexOf('{') + 1, lines[j].indexOf('}'));
-        paramNode.name = lines[j].substring(lines[j].indexOf('} ') + 2, lines[j].indexOf('=') - 1);
-        paramNode.vals = lines[j].substring(lines[j].indexOf('=') + 1).trim().split(', ');
-
-        console.log(paramNode);
+        paramNode.name = lines[j].substring(lines[j].indexOf('}') + 1, lines[j].indexOf('=') - 1).trim();
+        let paramNodeVals = lines[j].substring(lines[j].indexOf('=') + 1).trim().split(', ');
 
         if (paramNode.type === "Boolean") {
-          paramNode.init = Boolean(paramNode.vals[0]);
+          // @param {Boolean}
+          paramNode.init = Boolean(paramNodeVals[0]);
+          annotationNode.params.push(paramNode);
         } else if (paramNode.type === "Number") {
-          paramNode.init = Number(paramNode.vals[0]);
-          paramNode.min = Number(paramNode.vals[1]);
-          paramNode.max = Number(paramNode.vals[2]);
+          // @param {Number}
+          paramNode.init = Number(paramNodeVals[0]);
+          paramNode.min = Number(paramNodeVals[1]);
+          paramNode.max = Number(paramNodeVals[2]);
+          annotationNode.params.push(paramNode);
         } else if (paramNode.type === "String") {
+          // @param {String}
           // TODO: Allow for multiple variabtions of strings, see README
-          paramNode.init = eval(paramNode.vals[0]);
+          paramNode.init = eval(paramNodeVals[0]);
+          annotationNode.params.push(paramNode);
         } else if (paramNode.type === "Array") {
+          // @param {Array}
           // TODO: Allow for multiple variabtions of arrays, see README
-          paramNode.init = eval(paramNode.vals[0]);
+          paramNode.init = eval(paramNodeVals[0]);
+          annotationNode.params.push(paramNode);
         } else if (paramNode.type === "Object") {
-          // TODO: Implement object parameters
-          paramNode.init = Object.create(null);
-          paramNode.constructor = paramNode.vals[0];
-        }
+          // @param {Object}
+          // TODO: Allow for multiple variabtions of arrays, see README
+          // TODO: Does the name need to be variable, i.e. function foo(name) and function foo(name.prop)?
 
-        annotationNode.params.push(paramNode);
+          // Split into base and property names
+          let paramNodeNameArray = paramNode.name.split(/[\[\]"'.]+/);
+          if (paramNodeNameArray[paramNodeNameArray.length - 1] === "") paramNodeNameArray.pop(); // if the parameter name ends on a bracket notation the last item in propNames is an empty string and needs to be removed
+          paramNode.name = paramNodeNameArray.shift();
+
+          let existingParamNode;
+          for (let m = 0; m < annotationNode.params.length; m++) {
+            if (annotationNode.params[m].name === paramNode.name) {
+              existingParamNode = annotationNode.params[m];
+            }
+          }
+
+          if (existingParamNode !== undefined) {
+            // add to an existing parameter
+            createNestedObj(existingParamNode.init, paramNodeNameArray, paramNodeVals[0]);
+          } else {
+            // create a new parameter
+            paramNode.init = {};
+            createNestedObj(paramNode.init, paramNodeNameArray, paramNodeVals[0]);
+            annotationNode.params.push(paramNode);
+          }
+        }
       }
     }
 
@@ -263,7 +285,7 @@ function Cluster (functionDeclarationNode, annotationNode) {
 
 Cluster.prototype.iterParams = function (paramsArray, annotationNode) {
   for (var i = 0; i < annotationNode.params.length; i++) {
-    let paramObj = annotationNode.params[0];
+    let paramObj = annotationNode.params[i];
 
     this.env.def(annotationNode.params[i].name, annotationNode.params[i].init, 0, paramObj);
   }
@@ -819,6 +841,18 @@ function isObjectEmpty (obj) {
     }
   }
   return true;
+}
+
+function createNestedObj (base, propNames, value) {
+  let lastPropName = arguments.length === 3 ? propNames.pop() : false;
+
+  for (let i = 0; i < propNames.length; i++) {
+    base = base[propNames[i]] = base[propNames[i]] || {};
+  }
+
+  if (lastPropName) base = base[lastPropName] = value;
+
+  return base;
 }
 
 //! INIT .......................................................................
