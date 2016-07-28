@@ -8,7 +8,7 @@
 </head>
 <body>
   <pre id="code" class="default linenums prettyprint">
-    /**
+    <!--/**
      * @param {Object} legend['#'] = {}
      * @param {Object} legend['o'] = {}
      * @param {String} ch = "#", "o", " "
@@ -20,6 +20,15 @@
         var element = new legend[ch]();
         element.originChar = ch;
         return element;
+    }-->
+
+    /**
+     * @param {Number} x = 3, 0, 10
+     * @param {Number} y = 4, 0, 10
+     */
+    function Vector(x, y) {
+        this.x = x;
+        this.y = y;
     }
   </pre>
   <script type="text/javascript" src="../node_modules/js-beautify/js/lib/beautify.js" charset="utf-8"></script>

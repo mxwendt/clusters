@@ -276,6 +276,10 @@ function Cluster (functionDeclarationNode, annotationNode) {
   this.env = new Environment();
   this.execution = [];
 
+  // TODO: move global variables to its own area in the state view
+  // Set global variables
+  this.env.def('this', {}, 0);
+
   // Add params to the environment
   this.iterParams(functionDeclarationNode.params, annotationNode);
 
@@ -468,9 +472,17 @@ Cluster.prototype.evaluate = function (node, step) {
     case 'AssignmentExpression':
       if (node.left.type === 'MemberExpression') {
         // TODO: Allow more than one level of nesting
-        let val = {};
-        val[node.left.property.name] = this.evaluate(node.right, step);
-        return this.env.set(node.left.object.name, val, step);
+        if (node.left.object.type === 'ThisExpression') {
+          // for example: this.x = value
+          let val = this.env.get('this', step);
+          createNestedObj(val, [node.left.property.name], this.evaluate(node.right, step));
+          return this.env.set('this', val, step);
+        } else {
+          // for example: variable.x = value
+          let val = this.env.get(node.left.object.name, step) || {};
+          createNestedObj(val, [node.left.property.name], this.evaluate(node.right, step));
+          return this.env.set(node.left.object.name, val, step);
+        }
       } else {
         return this.env.set(node.left.name, this.evaluate(node.right, step), step);
       }
