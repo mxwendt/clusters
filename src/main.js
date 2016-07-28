@@ -127,7 +127,8 @@ Parser.prototype.getAnnotations = function () {
  */
 
 function Walker (parser) {
-  this.walk(parser.getAST(), parser.getAnnotations());
+  this.parser = parser;
+  this.walk(this.parser.getAST(), this.parser.getAnnotations());
 }
 
 Walker.prototype.walk = function (ast, annotations) {
@@ -542,10 +543,17 @@ Cluster.prototype.getEnv = function () {
  * cluster using d3.js.
  */
 
-function Visualizer (parser, walker) {
-  this.codeStr = parser.getCodeStr();
-  this.execution = walker.getCluster().getExecution();
-  this.env = walker.getCluster().getEnv();
+function Visualizer (parser, walker, elem) {
+  this.parser = parser;
+  this.walker = walker;
+  this.elem = elem;
+  this.codeStr = this.parser.getCodeStr();
+  this.execution = this.walker.cluster.execution;
+  this.env = this.walker.cluster.env;
+
+  this.ractive;
+  this.ractiveData;
+  this.ractiveTemplate;
 
   this.markupWrapper();
   this.markupCode(this.codeStr);
@@ -557,7 +565,7 @@ function Visualizer (parser, walker) {
 
 Visualizer.prototype.markupWrapper = function () {
   this.wrapper = document.createElement('div');
-  this.wrapper.classList.add('snippet');
+  this.wrapper.classList.add('cluster');
 
   this.codeWrapper = document.createElement('div');
   this.codeWrapper.classList.add('code');
@@ -572,7 +580,8 @@ Visualizer.prototype.markupWrapper = function () {
   this.wrapper.appendChild(this.dataWrapper);
   this.wrapper.appendChild(this.stateWrapper);
 
-  document.querySelector('body').appendChild(this.wrapper);
+  this.elem.replaceChild(this.wrapper, this.elem.firstElementChild);
+  // document.querySelector('body').replace(this.wrapper, this.wrapper);
 };
 
 Visualizer.prototype.markupCode = function (codeStr) {
@@ -625,23 +634,23 @@ Visualizer.prototype.markupState = function () {
   paramsTemplate += '</ol>';
   valuesTemplate += '</ol>';
 
-  let ractiveTemplate = paramsTemplate + valuesTemplate;
+  this.ractiveTemplate = paramsTemplate + valuesTemplate;
 
   // Data
 
-  let ractiveData = Object.create(null);
-  ractiveData.params = Object.create(null);
-  ractiveData.values = Object.create(null);
+  this.ractiveData = Object.create(null);
+  this.ractiveData.params = Object.create(null);
+  this.ractiveData.values = Object.create(null);
 
   for (let name in this.env.vars) {
     if (this.env.vars[name].properties !== undefined) {
       // param data
-      ractiveData.params[name] = Object.create(null);
-      ractiveData.params[name].val = this.env.getAtStep(name, 1); // Using 1 gets the initial value
+      this.ractiveData.params[name] = Object.create(null);
+      this.ractiveData.params[name].val = this.env.getAtStep(name, 1); // Using 1 gets the initial value
     } else {
       // value data
-      ractiveData.values[name] = Object.create(null);
-      ractiveData.values[name].val = this.env.getAtStep(name, 1); // Using 1 gets the initial value
+      this.ractiveData.values[name] = Object.create(null);
+      this.ractiveData.values[name].val = this.env.getAtStep(name, 1); // Using 1 gets the initial value
     }
   }
 
@@ -649,14 +658,14 @@ Visualizer.prototype.markupState = function () {
 
   this.ractive = new Ractive({
     el: self.stateWrapper,
-    template: ractiveTemplate,
+    template: self.ractiveTemplate,
     data: {
-      state: ractiveData,
+      state: self.ractiveData,
       raw: function (val) {
         if (val !== undefined) return ' = <span class="stateVal">' + val + '</span>';
       },
       beautify: function (val) {
-        if (val !== undefined) return ' = <span class="stateVal">' + parser.beautify(val) + '</span>';
+        if (val !== undefined) return ' = <span class="stateVal">' + self.parser.beautify(val) + '</span>';
       },
       pure: function (val) {
         if (val !== undefined && typeof(val) === 'string') return val.substring(1, val.length - 1);
@@ -777,16 +786,16 @@ UI.prototype.addExecutionSlider = function () {
   this.execSlider = document.createElement('input');
   this.execSlider.type = "range";
   this.execSlider.min = 0;
-  this.execSlider.max = this.vis.getExecution().length - 1;
+  this.execSlider.max = this.vis.execution.length - 1;
   this.execSlider.value = 0;
   this.execSlider.classList.add('execSlider');
   this.execSlider.style.width = this.vis.getW() - 6 + 'px';
 
-  if (this.vis.getExecution().length <= 1) this.execSlider.style.display = 'none';
+  if (this.vis.execution.length <= 1) this.execSlider.style.display = 'none';
 
   this.execSlider.addEventListener('input', this.onExecutionSliderInput.bind(this), false);
 
-  this.vis.getDataWrapper().appendChild(this.execSlider);
+  this.vis.dataWrapper.appendChild(this.execSlider);
 
   this.highlightLine();
   this.highlightDot();
@@ -796,13 +805,13 @@ UI.prototype.highlightLine = function () {
   this.unhighlightLine();
 
   let step = this.execSlider !== undefined ? this.execSlider.value : 0;
-  let line = this.vis.getCodeWrapper().querySelector('ol.linenums').children[this.vis.getExecution()[step] - 1];
+  let line = this.vis.codeWrapper.querySelector('ol.linenums').children[this.vis.execution[step] - 1];
 
   line.classList.add('is-highlighted');
 };
 
 UI.prototype.unhighlightLine = function () {
-  let lines = this.vis.getCodeWrapper().querySelector('ol.linenums').children;
+  let lines = this.vis.codeWrapper.querySelector('ol.linenums').children;
 
   for (var i = 0; i < lines.length; i++) {
     if (lines[i].classList.contains('is-highlighted')) {
@@ -816,7 +825,7 @@ UI.prototype.highlightDot = function () {
 
   this.unhighlightDot();
 
-  this.vis.getDots().each(function(d, i) {
+  this.vis.dots.each(function(d, i) {
     if (i == self.execSlider.value) {
       this.classList.add('is-active');
     }
@@ -824,7 +833,7 @@ UI.prototype.highlightDot = function () {
 };
 
 UI.prototype.unhighlightDot = function () {
-  this.vis.getDots().each(function(d, i) {
+  this.vis.dots.each(function(d, i) {
     if (this.classList.contains('is-active')) {
       this.classList.remove('is-active');
     }
@@ -832,18 +841,16 @@ UI.prototype.unhighlightDot = function () {
 };
 
 UI.prototype.updateState = function () {
-  let ractive = this.vis.getRactive();
-  let env = this.vis.getEnvironment();
   let step = Number(this.execSlider.value) + 1;
 
-  for (let param in ractive.get().state.values) {
-    // if (ractive.values.hasOwnProperty(value)) {}
-    ractive.set('state.values.' + param + '.val', env.getAtStep(param, step));
+  for (let param in this.vis.ractive.get().state.values) {
+    // if (this.vis.ractive.values.hasOwnProperty(value)) {}
+    this.vis.ractive.set('state.values.' + param + '.val', this.vis.env.getAtStep(param, step));
   }
 
-  for (let value in ractive.get().state.values) {
-    // if (ractive.values.hasOwnProperty(value)) {}
-    ractive.set('state.values.' + value + '.val', env.getAtStep(value, step));
+  for (let value in this.vis.ractive.get().state.values) {
+    // if (this.vis.ractive.values.hasOwnProperty(value)) {}
+    this.vis.ractive.set('state.values.' + value + '.val', this.vis.env.getAtStep(value, step));
   }
 };
 
@@ -890,14 +897,10 @@ function createNestedObj (base, propNames, value) {
 // Get the code as a string
 // TODO: Make it work for more than one <pre> element
 // TODO: Make it work when code comes in string format, i.e from a JSON file
-var codeElem = document.getElementsByTagName('pre');
-var codeText = codeElem[0].textContent;
+var codeElem = document.querySelectorAll('.snippet');
 
-// Remove elements from the DOM
 for (var i = 0; i < codeElem.length; i++) {
-  codeElem[i].remove();
+  let parser = new Parser(codeElem[i].textContent);
+  let walker = new Walker(parser);
+  let visualizer = new Visualizer(parser, walker, codeElem[i]);
 }
-
-var parser = new Parser(codeText);
-var walker = new Walker(parser);
-var visualizer = new Visualizer(parser, walker);

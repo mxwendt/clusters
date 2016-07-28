@@ -7,29 +7,31 @@
   <link rel="stylesheet" href="../src/main.css">
 </head>
 <body>
-  <pre class="cluster">
-    /**
-     * @param {Number} size = 8, 0, 10
-     * @return {Array} result
-     */
-    function fibonacci(size) {
-      var first = 0;
-      var second = 1;
-      var next;
-      var count = 2;
-      var result = [first, second];
-      if (size < 2) {
-        return 'the request was made but it was not good';
-      }
-      while (count++ < size) {
-        next = first + second;
-        first = second;
-        second = next;
-        result.push(next);
-      }
-      return result;
-    }
-  </pre>
+    <div class="snippet">
+      <pre>
+        /**
+         * @param {Number} size = 8, 0, 10
+         * @return {Array} result
+         */
+        function fibonacci(size) {
+          var first = 0;
+          var second = 1;
+          var next;
+          var count = 2;
+          var result = [first, second];
+          if (size < 2) {
+            return 'the request was made but it was not good';
+          }
+          while (count++ < size) {
+            next = first + second;
+            first = second;
+            second = next;
+            result.push(next);
+          }
+          return result;
+        }
+      </pre>
+    </div>
   <script type="text/javascript" src="../node_modules/js-beautify/js/lib/beautify.js" charset="utf-8"></script>
   <script type="text/javascript" src="../node_modules/js-beautify/js/lib/beautify.js" charset="utf-8"></script>
   <script type="text/javascript" src="../node_modules/google-code-prettify/bin/prettify.min.js" charset="utf-8"></script>

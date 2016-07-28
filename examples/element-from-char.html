@@ -7,37 +7,54 @@
   <link rel="stylesheet" href="../src/main.css">
 </head>
 <body>
-  <pre class="cluster">
-    <!--/**
-     * @param {Object} legend['#'] = {}
-     * @param {Object} legend['o'] = {}
-     * @param {String} ch = "#", "o", " "
-     */
-    function elementFromChar(legend, ch) {
-        if (ch == ' ') {
-            return null;
-        }
-        var element = new legend[ch]();
-        element.originChar = ch;
-        return element;
-    }-->
+    <pre class="default linenums prettyprint">
+var plan = [
+    '#####',
+    '#o  #',
+    '#  ##',
+    '#  o#',
+    '#####'
+];
+    </pre>
 
-    /**
-     * @param {Number} x = 3, 0, 10
-     * @param {Number} y = 4, 0, 10
-     */
-    function Vector(x, y) {
-        this.x = x;
-        this.y = y;
-    }
-  </pre>
-  <script type="text/javascript" src="../node_modules/js-beautify/js/lib/beautify.js" charset="utf-8"></script>
-  <script type="text/javascript" src="../node_modules/js-beautify/js/lib/beautify.js" charset="utf-8"></script>
-  <script type="text/javascript" src="../node_modules/google-code-prettify/bin/prettify.min.js" charset="utf-8"></script>
-  <script type="text/javascript" src="../node_modules/acorn/dist/acorn.js" charset="utf-8"></script>
-  <script type="text/javascript" src="../node_modules/acorn/dist/walk.js" charset="utf-8"></script>
-  <script type="text/javascript" src="../node_modules/d3/d3.js" charset="utf-8"></script>
-  <script type="text/javascript" src="../lib/ractive.js" charset="utf-8"></script>
-  <script type="text/javascript" src="../src/main.js" charset="utf-8"></script>
+    <div class="snippet">
+        <pre>
+            /**
+             * @param {Number} x = 3, 0, 10
+             * @param {Number} y = 4, 0, 10
+             */
+            function Vector(x, y) {
+                this.x = x;
+                this.y = y;
+            }
+        </pre>
+    </div>
+
+    <div class="snippet">
+        <pre>
+            /**
+             * @param {Object} legend['#'] = {}
+             * @param {Object} legend['o'] = {}
+             * @param {String} ch = "#", "o", " "
+             */
+            function elementFromChar(legend, ch) {
+                if (ch == ' ') {
+                    return null;
+                }
+                var element = new legend[ch]();
+                element.originChar = ch;
+                return element;
+            }
+        </pre>
+    </div>
+
+    <script type="text/javascript" src="../node_modules/js-beautify/js/lib/beautify.js" charset="utf-8"></script>
+    <script type="text/javascript" src="../node_modules/js-beautify/js/lib/beautify.js" charset="utf-8"></script>
+    <script type="text/javascript" src="../node_modules/google-code-prettify/bin/prettify.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="../node_modules/acorn/dist/acorn.js" charset="utf-8"></script>
+    <script type="text/javascript" src="../node_modules/acorn/dist/walk.js" charset="utf-8"></script>
+    <script type="text/javascript" src="../node_modules/d3/d3.js" charset="utf-8"></script>
+    <script type="text/javascript" src="../lib/ractive.js" charset="utf-8"></script>
+    <script type="text/javascript" src="../src/main.js" charset="utf-8"></script>
 </body>
 </html>

@@ -2,11 +2,11 @@
 Wrapper
 ------------------------------------------------------------------------------*/
 
-.snippet {
+.cluster, .snippet {
   margin-top: 30px;
 }
 
-.snippet:after {
+.cluster:after, .snippet:after {
     content: "";
     display: block;
     clear: both;
