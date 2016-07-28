@@ -447,11 +447,24 @@ Cluster.prototype.evaluate = function (node, step) {
       return retVal;
 
     case 'BinaryExpression':
-      let left = this.evaluate(node.left, step).toString();
-      let right = this.evaluate(node.right, step).toString();
-      let binaryExpr = left + node.operator + right;
+      let left = this.evaluate(node.left, step);
+      let right = this.evaluate(node.right, step);
 
-      return eval(binaryExpr);
+      try {
+        return eval(left + node.operator + right);
+      } catch (e) {
+        if (e instanceof SyntaxError) {
+          try {
+            return eval('"' + left + '"' + node.operator + '"' + right + '"');
+          } catch (e) {
+            console.error(e);
+          }
+        } else {
+          console.error(e);
+        }
+      }
+
+      break;
 
     case 'AssignmentExpression':
       return this.env.set(node.left.name, this.evaluate(node.right, step), step);
