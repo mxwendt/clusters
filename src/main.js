@@ -412,6 +412,13 @@ Cluster.prototype.evaluate = function (node, step) {
 
       return obj;
 
+    case 'NewExpression':
+      if (node.arguments.length === 0) { // {}
+        return {};
+      }
+
+      break;
+
     case 'UpdateExpression':
       let updateExprVal = this.env.get(node.argument.name);
       let retVal;
