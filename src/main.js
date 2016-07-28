@@ -184,7 +184,7 @@ Environment.prototype.lookup = function (name) {
 
 Environment.prototype.get = function (name) {
   if (name in this.vars) return this.vars[name].value;
-  throw new Error('Undefined variable ' + name);
+  throw new Error('Undefined variable: ' + name);
 };
 
 Environment.prototype.getAtStep = function (name, step) {
@@ -199,18 +199,19 @@ Environment.prototype.getAtStep = function (name, step) {
     return retVal;
   }
 
-  throw new Error('Undefined variable ' + name);
+  throw new Error('Undefined variable: ' + name);
 };
 
 Environment.prototype.set = function (name, val, step) {
-   var scope = this.lookup(name);
+  var scope = this.lookup(name);
 
-   // let's not allow defining globals from a nested environment
-   if (!scope && this.parent) throw new Error('Undefined variable ' + name);
+  // let's not allow defining globals from a nested environment
+  if (!scope && this.parent) throw new Error('Undefined variable ' + name);
 
-   (scope || this).vars[name].steps.push({step: step, value: this.format(val)});
 
-   return (scope || this).vars[name].value = val;;
+  (scope || this).vars[name].steps.push({step: step, value: this.format(val)});
+
+  return (scope || this).vars[name].value = val;
 };
 
 Environment.prototype.def = function (name, val, step, propObj) {
@@ -473,10 +474,10 @@ Cluster.prototype.evaluate = function (node, step) {
         if (Object.prototype.toString.call(callExprObj) === '[object Array]') {
           if (node.callee.object.type === 'Identifier') {
             // top level method i.e. a.push
-            this.env.set(node.callee.object.name, this.env.get(node.callee.object.name), step);
+            this.env.set(node.callee.object.name, this.env.get(node.callee.object.name));
           } else if (node.callee.object.type === 'MemberExpression') {
             // first level method i.e. a.b.push
-            this.env.set(node.callee.object.object.name, this.env.get(node.callee.object.object.name), step);
+            this.env.set(node.callee.object.object.name, this.env.get(node.callee.object.object.name));
           }
         }
 
@@ -578,7 +579,7 @@ Visualizer.prototype.markupState = function () {
         // TODO: Create inputs for array parameter => select
       } else if (this.env.vars[name].properties.type === 'Object') {
         // TODO: Create inputs for object parameter => depending on primitive type
-        paramsTemplate += '<li>' + this.env.vars[name].properties.name + '{{{ rawObj(state.params.' + this.env.vars[name].properties.name + '.val, state.params.' + this.env.vars[name].properties.name + '.constructor) }}}';
+        paramsTemplate += '<li>' + this.env.vars[name].properties.name + '{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}' + '</li>';
       }
     } else {
       valuesTemplate += '<li>' + name + '{{{ beautify(state.values.' + name + '.val) }}}</li>';
@@ -593,24 +594,20 @@ Visualizer.prototype.markupState = function () {
   // Data
 
   let ractiveData = Object.create(null);
-
   ractiveData.params = Object.create(null);
   ractiveData.values = Object.create(null);
 
   for (let name in this.env.vars) {
     if (this.env.vars[name].properties !== undefined) {
+      // param data
       ractiveData.params[name] = Object.create(null);
       ractiveData.params[name].val = this.env.getAtStep(name, 1); // Using 1 gets the initial value
-      if (this.env.vars[name].properties.type === "Object") {
-        ractiveData.params[name].constructor = this.env.vars[name].properties.constructor;
-      }
     } else {
+      // value data
       ractiveData.values[name] = Object.create(null);
       ractiveData.values[name].val = this.env.getAtStep(name, 1); // Using 1 gets the initial value
     }
   }
-
-  console.log(ractiveData);
 
   // Ractive
 
@@ -621,9 +618,6 @@ Visualizer.prototype.markupState = function () {
       state: ractiveData,
       raw: function (val) {
         if (val !== undefined) return ' = <span class="stateVal">' + val + '</span>';
-      },
-      rawObj: function (val, constructor) {
-        if (val !== undefined) return ' = <span class="stateVal"><span class="typ">' + constructor  + '</span> ' + val + '</span>';
       },
       beautify: function (val) {
         if (val !== undefined) return ' = <span class="stateVal">' + parser.beautify(val) + '</span>';
