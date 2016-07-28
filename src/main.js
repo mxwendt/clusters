@@ -466,7 +466,14 @@ Cluster.prototype.evaluate = function (node, step) {
       break;
 
     case 'AssignmentExpression':
-      return this.env.set(node.left.name, this.evaluate(node.right, step), step);
+      if (node.left.type === 'MemberExpression') {
+        // TODO: Allow more than one level of nesting
+        let val = {};
+        val[node.left.property.name] = this.evaluate(node.right, step);
+        return this.env.set(node.left.object.name, val, step);
+      } else {
+        return this.env.set(node.left.name, this.evaluate(node.right, step), step);
+      }
 
     case 'MemberExpression':
       if (node.computed === true) {
