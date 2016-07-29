@@ -35,6 +35,7 @@ function fubar(foo) {}
 
 /**
  * @param {Boolean} foo = true
+ * @param {Boolean} foo = false
  */
 function fubar(foo) {}
 ```
@@ -105,7 +106,8 @@ function fubar(foo) {}
 
 Object values
 * {type} name = initial value
-* **or** turns into according to type
+* value is an `object`, `null` or `undefined`
+* turns into select dropdown
 
 ```javascript
 // before:
@@ -118,25 +120,50 @@ function fubar(foo) {}
 // after:
 
 /**
- * @param {Boolean} foo.thud = true
- * @param {Number} foo.bar = 8, 0, 10
- * @param {String} foo.baz = ”blah-blah“
- * @param {Array} foo.qux = [0, 1, 2, 3, 4, 5]
- * @param {Object} quux = SomeObject
- *
- * Dot notation:
- * @param {Object} foo.quux
- *
- * Brackets notation:
- * @param {Object} foo["quux"]
- *
- * Nested:
- * @param {Object} foo.plugh.quux
+ * @param {Object} foo = {}
+ * @param {Object} foo = null
+ * @param {Object} foo = undefined
  */
 function fubar(foo) {}
 ```
 
-The values are all editable by default.
+Dot notation, bracket notation and nested notation gets handled independent of parameter type. It extends the existing 
+parameter. Can be nested multiple times.
 
-The naming of the variables in the object values only annotate values that are
-needed for the function to work, not the whole object. The values are made up of other types.
+```javascript
+/**
+ * i.e. dot notation, one level, all types:
+ * 
+ * @param {Boolean} foo.thud = true
+ * @param {Number} foo.bar = 8, 0, 10
+ * @param {String} foo.baz = ”blah-blah“
+ * @param {Array} foo.qux = [0, 1, 2, 3, 4, 5]
+ * @param {Object} foo.ysr = {}
+ * 
+ * i.e. dot notation, multiple levels:
+ * 
+ * @param {Boolean} foo.thud.bar.baz = true
+ * 
+ * i.e. bracket notation, one level:
+ * 
+ * @param {Boolean} foo['thud'] = true
+ * @param {Boolean} foo["thud"] = true
+ * 
+ * i.e. bracket notation, multiple levels:
+ * 
+ * @param {Boolean} foo['thud']['bar']['baz‘] = true
+ * @param {Boolean} foo["thud"]["bar"]["baz"] = true
+ * 
+ * i.e. dot and bracket notation, multiple levels:
+ * 
+ * @param {Boolean} foo['thud'].bar.baz = true
+ * @param {Boolean} foo.thud["bar"]["baz"] = true
+ */
+function fubar(foo) {}
+```
+
+## Note
+
+* All values are editable by default.
+* The naming of the variables in the object values only annotate values that are
+needed for the function to work, not the whole object.

@@ -33,8 +33,8 @@ var plan = [
     <div class="snippet">
         <pre>
             /**
-             * @param {Object} element = null
-             * @param {Object} element.originChar = "#", "o", " "
+             * @param {Object} element = {}
+             * @param {String} element.originChar = "#", "o", " "
              */
             function charFromElement(element) {
                 if (element == null) {
@@ -49,6 +49,7 @@ var plan = [
     <div class="snippet">
         <pre>
             /**
+             * @param {Object} legend = {}
              * @param {Object} legend['#'] = {}
              * @param {Object} legend['o'] = {}
              * @param {String} ch = "#", "o", " "

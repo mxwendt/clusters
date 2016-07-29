@@ -10,7 +10,10 @@
 function Parser (codeText) {
   this.codeStr = this.beautify(codeText);
   this.ast = this.parseAST(this.codeStr);
-  this.annotations = this.parseComments(this.codeStr);
+  this.comments = [];
+  this.annotations = [];
+
+  this.parseComments(this.codeStr);
 }
 
 Parser.prototype.beautify = function (codeText) {
@@ -21,91 +24,196 @@ Parser.prototype.parseAST = function (codeStr) {
   return acorn.parse(codeStr, {sourceType: "script", locations: true});
 };
 
+/**
+ * Only @param annotations inside block comments get parsed. Each block comment can have multiple @param annotations.
+ *
+ * @param {String} codeStr
+ * @returns {Array}
+ */
 Parser.prototype.parseComments = function (codeStr) {
-  let comments = [];
+  let self = this;
+
+  // Line and block comments
 
   acorn.parse(codeStr, {
     sourceType: "script",
     locations: true,
-    onComment: comments // collect comments in Esprima's format
+    onComment: self.comments // collect comments in Esprima's format
   });
 
-  return this.parseAnnotations(comments);
-};
+  // @param annotations
 
-Parser.prototype.parseAnnotations = function (comments) {
-  let annotations = [];
+  let annotationNode = Object.create(null);
+  annotationNode.params = [];
 
-  for (let i = 0; i < comments.length; i++) {
-    if (comments[i].type === 'Line') continue;
+  for (let i = 0; i < this.comments.length; i++) {
 
-    let annotationNode = Object.create(null);
-    annotationNode.loc = comments[i].loc; // Copy the location of the full comment (multiple lines in case of block comment)
-    annotationNode.params = []; // Empty array for the @param parameters
+    // Don't parse line comments
+    if (this.comments[i].type === 'Line') continue;
 
-    let lines = comments[i].value.split(/\r?\n/);
+    // Save the location of the block comment
+    annotationNode.loc = this.comments[i].loc;
 
+    // Save each @param annotation separately
+    let lines = this.comments[i].value.split(/\r?\n/);
     for (let j = 0; j < lines.length; j++) {
-      if (lines[j].indexOf('@param') > 0) {
-        let paramNode = Object.create(null);
-        paramNode.type = lines[j].substring(lines[j].indexOf('{') + 1, lines[j].indexOf('}'));
-        paramNode.name = lines[j].substring(lines[j].indexOf('}') + 1, lines[j].indexOf('=') - 1).trim();
-        let paramNodeVals = lines[j].substring(lines[j].indexOf('=') + 1).trim().split(', ');
-
-        if (paramNode.type === "Boolean") {
-          // @param {Boolean}
-          paramNode.init = Boolean(paramNodeVals[0]);
-          annotationNode.params.push(paramNode);
-        } else if (paramNode.type === "Number") {
-          // @param {Number}
-          paramNode.init = Number(paramNodeVals[0]);
-          paramNode.min = Number(paramNodeVals[1]);
-          paramNode.max = Number(paramNodeVals[2]);
-          annotationNode.params.push(paramNode);
-        } else if (paramNode.type === "String") {
-          // @param {String}
-          // TODO: Allow for multiple variabtions of strings, see README
-          paramNode.init = eval(paramNodeVals[0]);
-          annotationNode.params.push(paramNode);
-        } else if (paramNode.type === "Array") {
-          // @param {Array}
-          // TODO: Allow for multiple variabtions of arrays, see README
-          paramNode.init = eval(paramNodeVals[0]);
-          annotationNode.params.push(paramNode);
-        } else if (paramNode.type === "Object") {
-          // @param {Object}
-          // TODO: Allow for multiple variabtions of arrays, see README
-          // TODO: Does the name need to be variable, i.e. function foo(name) and function foo(name.prop)?
-
-          // Split into base and property names
-          let paramNodeNameArray = paramNode.name.split(/[\[\]"'.]+/);
-          if (paramNodeNameArray[paramNodeNameArray.length - 1] === "") paramNodeNameArray.pop(); // if the parameter name ends on a bracket notation the last item in propNames is an empty string and needs to be removed
-          paramNode.name = paramNodeNameArray.shift();
-
-          let existingParamNode;
-          for (let m = 0; m < annotationNode.params.length; m++) {
-            if (annotationNode.params[m].name === paramNode.name) {
-              existingParamNode = annotationNode.params[m];
-            }
-          }
-
-          if (existingParamNode !== undefined) {
-            // add to an existing parameter
-            createNestedObj(existingParamNode.init, paramNodeNameArray, paramNodeVals[0]);
-          } else {
-            // create a new parameter
-            paramNode.init = {};
-            createNestedObj(paramNode.init, paramNodeNameArray, paramNodeVals[0]);
-            annotationNode.params.push(paramNode);
-          }
-        }
+      if (lines[j].indexOf('* @param') > 0) {
+        this.parseParamAnnotation(annotationNode, lines[j].substring(lines[j].indexOf('@')));
       }
     }
 
-    annotations.push(annotationNode);
+    this.annotations.push(annotationNode);
+  }
+};
+
+Parser.prototype.parseParamAnnotation = function (annotationNode, line) {
+  let fullParamName = line.substring(line.indexOf('}') + 1, line.indexOf('=')).trim(); // gets everything between '{' and '=', i.e. foo or foo.bar['baz']["qux"].quux
+
+  if (splitObjNotation(fullParamName).length === 1) {
+    this.createParamNode(annotationNode, line);
+  } else {
+    this.updateParamNode(annotationNode, line, splitObjNotation(fullParamName));
+  }
+};
+
+Parser.prototype.createParamNode = function (annotationNode, line) {
+  let newParamNode = Object.create(null);
+  newParamNode.line = line;
+  newParamNode.type = line.substring(line.indexOf('{') + 1, line.indexOf('}')); // gets everything between '{' and '}', either 'Boolean', 'Number', 'String', 'Array', or 'Object'
+  newParamNode.name = line.substring(line.indexOf('}') + 1, line.indexOf('=')).trim(); // should be a base identifier like 'foo' without properties (not like 'foo.bar' or similar)
+
+  let rawVals = line.substring(line.indexOf('=') + 1).trim().split(', ');
+
+  switch (newParamNode.type) {
+
+    case 'Boolean': // @param {Boolean} foo = true
+      rawVals[0] = Boolean(rawVals[0]); // there is only one value
+
+      newParamNode.init = rawVals[0];
+      annotationNode.params.push(newParamNode);
+
+      break;
+
+    case 'Number': // @param {Number} foo = 8, 0, 10
+      for (let i = 0; i < rawVals.length; i++) {
+        rawVals[i] = Number(rawVals[i]);
+      }
+
+      newParamNode.init = rawVals[0];
+      newParamNode.min = rawVals[1];
+      newParamNode.max = rawVals[2];
+      annotationNode.params.push(newParamNode);
+
+      break;
+
+    case 'String': // @param {String} foo = "blah-blah", "bluh-bluh", "blih-blih"
+      for (let j = 0; j < rawVals.length; j++) {
+        rawVals[j] = eval(rawVals[j]);
+      }
+
+      newParamNode.init = rawVals[0]; // TODO: Allow for multiple variations of strings, see README
+      annotationNode.params.push(newParamNode);
+
+      break;
+
+    case 'Array': // @param {Array} foo = [0, 1, 2, 3, 4, 5], [0, 2, 4, 6, 8, 10], [3, 2, 1]
+      for (let m = 0; m < rawVals.length; m++) {
+        rawVals[m] = eval(rawVals[m]);
+      }
+
+      newParamNode.init = rawVals[0]; // TODO: Allow for multiple variations of arrays, see README
+      annotationNode.params.push(newParamNode);
+
+      break;
+
+    case 'Object': // @param {Object} foo = {}, null
+      for (let n = 0; n < rawVals.length; n++) {
+        if (rawVals[n] === '{}') rawVals[n] = {};
+        else if (rawVals[n] === 'null') rawVals[n] = null;
+        else if (rawVals[n] === 'undefined') rawVals[n] = undefined;
+        else rawVals[n] = eval(rawVals[n]);
+      }
+
+      newParamNode.init = rawVals[0]; // TODO: Allow for multiple variations of arrays, see README
+      annotationNode.params.push(newParamNode);
+
+      break;
+
+    default:
+      throw new Error('I don\'t know how to parse the @param annotation: ' + newParamNode.type);
   }
 
-  return annotations;
+  // console.log(newParamNode);
+};
+
+Parser.prototype.updateParamNode = function (annotationNode, line, nameParts) {
+  let existingParamNode;
+  let newParamNodeProp = Object.create(null);
+
+  for (let i = 0; i < annotationNode.params.length; i++) {
+    if (annotationNode.params[i].name === nameParts.shift()) {
+      existingParamNode = annotationNode.params[i];
+    }
+  }
+
+  existingParamNode.line += '; ' + line;
+  newParamNodeProp.type = line.substring(line.indexOf('{') + 1, line.indexOf('}')); // gets everything between '{' and '}', either 'Boolean', 'Number', 'String', 'Array', or 'Object'
+
+  let rawVals = line.substring(line.indexOf('=') + 1).trim().split(', ');
+
+  switch (newParamNodeProp.type) {
+
+    case 'Boolean': // @param {Boolean} foo.bar = true
+      rawVals[0] = Boolean(rawVals[0]); // there is only one value
+
+      createNestedObj(existingParamNode.init, nameParts, rawVals[0]);
+
+      break;
+
+    case 'Number': // @param {Number} foo.bar = 8, 0, 10
+      for (let i = 0; i < rawVals.length; i++) {
+        rawVals[i] = Number(rawVals[i]);
+      }
+
+      createNestedObj(existingParamNode.init, nameParts, rawVals[0]);
+
+      break;
+
+    case 'String': // @param {String} foo = "blah-blah", "bluh-bluh", "blih-blih"
+      for (let j = 0; j < rawVals.length; j++) {
+        rawVals[j] = eval(rawVals[j]);
+      }
+
+      createNestedObj(existingParamNode.init, nameParts, rawVals[0]); // TODO: Allow for multiple variations of strings, see README
+
+      break;
+
+    case 'Array': // @param {Array} foo.bar = [0, 1, 2, 3, 4, 5], [0, 2, 4, 6, 8, 10], [3, 2, 1]
+      for (let m = 0; m < rawVals.length; m++) {
+        rawVals[m] = eval(rawVals[m]);
+      }
+
+      createNestedObj(existingParamNode.init, nameParts, rawVals[0]); // TODO: Allow for multiple variations of strings, see README
+
+      break;
+
+    case 'Object': // @param {Object} foo.bar = {}, null
+      for (let n = 0; n < rawVals.length; n++) {
+        if (rawVals[n] === '{}') rawVals[n] = {};
+        else if (rawVals[n] === 'null') rawVals[n] = null;
+        else if (rawVals[n] === 'undefined') rawVals[n] = undefined;
+        else rawVals[n] = eval(rawVals[n]);
+      }
+
+      createNestedObj(existingParamNode.init, nameParts, rawVals[0]); // TODO: Allow for multiple variations of strings, see README
+
+      break;
+
+    default:
+      throw new Error('I don\'t know how to parse the @param annotation: ' + newParamNode.type);
+  }
+
+  // console.log(existingParamNode);
 };
 
 Parser.prototype.getCodeStr = function () {
@@ -277,6 +385,8 @@ function Cluster (functionDeclarationNode, annotationNode) {
   this.env = new Environment();
   this.execution = [];
 
+  console.log(this.env);
+
   // TODO: move global variables to its own area in the state view
   // Set global variables
   this.env.def('this', {}, 0);
@@ -315,7 +425,11 @@ Cluster.prototype.iter = function (node) {
         this.iterBlockStatements(node.consequent);
       } else if (this.evaluate(node.test, this.execution.length) === false) {
         if (node.alternate !== null) {
-          this.iterBlockStatements(node.alternate);
+          if (node.alternate.type === 'BlockStatement') {
+            this.iterBlockStatements(node.alternate);
+          } else {
+            this.iter(node.alternate);
+          }
         }
       }
 
@@ -882,6 +996,15 @@ function isObjectEmpty (obj) {
     }
   }
   return true;
+}
+
+function splitObjNotation (objNotation) {
+  let notationParts = objNotation.split(/[\[\]"'.]+/);
+
+  // Remove the last item if the parameter name ends on a bracket notation because then it is an empty string, i.e. foo.["bar"] or foo.['baz']
+  if (notationParts[notationParts.length - 1] === "") notationParts.pop();
+
+  return notationParts;
 }
 
 function createNestedObj (base, propNames, value) {
