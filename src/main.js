@@ -51,11 +51,21 @@ Parser.prototype.parseComments = function (codeStr) {
     // Don't parse line comments
     if (this.comments[i].type === 'Line') continue;
 
+    let lines = this.comments[i].value.split(/\r?\n/);
+
+    // Don't parse block comments that are not tagged with @cluster
+    let clusterTag = false;
+    for (let j = 0; j < lines.length; j++) {
+      if (lines[j].indexOf('* @cluster') > 0) {
+        clusterTag = true;
+      }
+    }
+    if (! clusterTag) continue;
+
     // Save the location of the block comment
     annotationNode.loc = this.comments[i].loc;
 
     // Save each @param annotation separately
-    let lines = this.comments[i].value.split(/\r?\n/);
     for (let j = 0; j < lines.length; j++) {
       if (lines[j].indexOf('* @param') > 0) {
         this.parseParamAnnotation(annotationNode, lines[j].substring(lines[j].indexOf('@')));
@@ -234,8 +244,9 @@ Parser.prototype.getAnnotations = function () {
  * Walks an abstract syntax tree and generates clusters with annotations.
  */
 
-function Walker (parser) {
+function Walker (parser, elem) {
   this.parser = parser;
+  this.elem = elem;
   this.walk(this.parser.getAST(), this.parser.getAnnotations());
 }
 
@@ -245,8 +256,10 @@ Walker.prototype.walk = function (ast, annotations) {
   acorn.walk.recursive(ast, [this], {
     FunctionDeclaration: function (functionNode, state/*, c*/) {
       let annotationNode = self.findAnnotation(annotations, functionNode.loc);
-
-      state[0].cluster = new Cluster(functionNode, annotationNode);
+      if (annotationNode !== undefined) {
+        state[0].cluster = new Cluster(functionNode, annotationNode);
+        state[0].visualizer = new Visualizer(self.parser, self, self.elem);
+      }
     }
   });
 };
@@ -1044,6 +1057,5 @@ var codeElem = document.querySelectorAll('.snippet');
 
 for (var i = 0; i < codeElem.length; i++) {
   let parser = new Parser(codeElem[i].textContent);
-  let walker = new Walker(parser);
-  let visualizer = new Visualizer(parser, walker, codeElem[i]);
+  let walker = new Walker(parser, codeElem[i]);
 }
