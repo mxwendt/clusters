@@ -615,6 +615,8 @@ Cluster.prototype.evaluate = function (node, step) {
         return this.evaluate(node.object, step)[node.property.name];
       }
 
+      break;
+
     case 'CallExpression':
       if (node.callee.computed === true) {
         // computed (a[b]) member expression, property is an 'Expression'
