@@ -315,7 +315,7 @@ Cluster.prototype.iter = function (node) {
         this.iterBlockStatements(node.consequent);
       } else if (this.evaluate(node.test, this.execution.length) === false) {
         if (node.alternate !== null) {
-          this.iter(node.alternate);
+          this.iterBlockStatements(node.alternate);
         }
       }
 
