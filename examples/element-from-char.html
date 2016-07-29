@@ -33,6 +33,22 @@ var plan = [
     <div class="snippet">
         <pre>
             /**
+             * @param {Object} element = null
+             * @param {Object} element.originChar = "#", "o", " "
+             */
+            function charFromElement(element) {
+                if (element == null) {
+                    return ' ';
+                } else {
+                    return element.originChar;
+                }
+            }
+        </pre>
+    </div>
+
+    <div class="snippet">
+        <pre>
+            /**
              * @param {Object} legend['#'] = {}
              * @param {Object} legend['o'] = {}
              * @param {String} ch = "#", "o", " "
