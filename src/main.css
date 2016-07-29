@@ -11,7 +11,7 @@ html {
 }
 
 .is-hidden {
-  display: none;
+  display: none !important;
 }
 
 /*------------------------------------------------------------------------------
@@ -37,12 +37,29 @@ Wrapper
 }
 
 .code {
-  width: 30%;
   margin-bottom: 50px;
+}
+
+.cluster.is-active .code {
+  width: 30%;
 }
 
 .data, .state {
   max-width: 35%;
+}
+
+.wrapperToggle {
+  position: absolute;
+  top: 34px;
+  left: 16px;
+  font-family: monospace;
+  z-index: 1;
+  background-color: white;
+}
+
+.wrapperToggle:hover {
+  cursor: pointer;
+  color: rgb(236, 94, 93);
 }
 
 /*------------------------------------------------------------------------------

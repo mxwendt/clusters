@@ -17,6 +17,18 @@
       "css": "right-dir",
       "code": 59393,
       "src": "fontawesome"
+    },
+    {
+      "uid": "80cd1022bd9ea151d554bec1fa05f2de",
+      "css": "up-dir",
+      "code": 59394,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "9dc654095085167524602c9acc0c5570",
+      "css": "left-dir",
+      "code": 59395,
+      "src": "fontawesome"
     }
   ]
 }

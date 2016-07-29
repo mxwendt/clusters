@@ -721,17 +721,32 @@ function Visualizer (parser, walker, elem) {
 }
 
 Visualizer.prototype.markupWrapper = function () {
+  let self = this;
+
   this.wrapper = document.createElement('div');
   this.wrapper.classList.add('cluster');
 
   this.codeWrapper = document.createElement('div');
   this.codeWrapper.classList.add('code');
 
+  this.wrapperToggle = document.createElement('div');
+  this.wrapperToggle.textContent = 'Enhance';
+  this.wrapperToggle.classList.add('wrapperToggle', 'icon-right-dir');
+  this.wrapperToggle.addEventListener('click', function (e) {
+    e.target.classList.toggle('icon-right-dir');
+    e.target.classList.toggle('icon-left-dir');
+    self.wrapper.classList.toggle('is-active');
+    self.dataWrapper.classList.toggle('is-hidden');
+    self.stateWrapper.classList.toggle('is-hidden');
+  });
+
   this.dataWrapper = document.createElement('div');
-  this.dataWrapper.classList.add('data');
+  this.dataWrapper.classList.add('data', 'is-hidden');
 
   this.stateWrapper = document.createElement('div');
-  this.stateWrapper.classList.add('state');
+  this.stateWrapper.classList.add('state', 'is-hidden');
+
+  this.codeWrapper.appendChild(this.wrapperToggle);
 
   this.wrapper.appendChild(this.codeWrapper);
   this.wrapper.appendChild(this.dataWrapper);
@@ -807,27 +822,27 @@ Visualizer.prototype.markupState = function () {
     } else {
       if (Object.prototype.toString.call(this.env.vars[name].value) === '[object Boolean]') {
         valuesTemplate += '<li>';
-        valuesTemplate += '<span class="stateLabel">sets ' + name + ' to</span>';
+        valuesTemplate += '<span class="stateLabel stateToggle icon-down-dir">sets ' + name + ' to</span>';
         valuesTemplate += '<span class="stateVal">{{{ beautify(state.values.' + name + '.val) }}}</span>';
         valuesTemplate += '</li>';
       } else if (Object.prototype.toString.call(this.env.vars[name].value) === '[object Number]') {
         valuesTemplate += '<li>';
-        valuesTemplate += '<span class="stateLabel">sets ' + name + ' to</span>';
+        valuesTemplate += '<span class="stateLabel stateToggle icon-down-dir">sets ' + name + ' to</span>';
         valuesTemplate += '<span class="stateVal">{{{ beautify(state.values.' + name + '.val) }}}</span>';
         valuesTemplate += '</li>';
       } else if (Object.prototype.toString.call(this.env.vars[name].value) === '[object String]') {
         valuesTemplate += '<li>';
-        valuesTemplate += '<span class="stateLabel">sets ' + name + ' to</span>';
+        valuesTemplate += '<span class="stateLabel stateToggle icon-down-dir">sets ' + name + ' to</span>';
         valuesTemplate += '<span class="stateVal">{{{ beautify(state.values.' + name + '.val) }}}</span>';
         valuesTemplate += '</li>';
       } else if (Object.prototype.toString.call(this.env.vars[name].value) === '[object Array]') {
         valuesTemplate += '<li>';
-        valuesTemplate += '<span class="stateLabel">sets ' + name + ' to</span>';
+        valuesTemplate += '<span class="stateLabel stateToggle icon-down-dir">sets ' + name + ' to</span>';
         valuesTemplate += '<span class="stateVal">{{{ beautify(state.values.' + name + '.val) }}}</span>';
         valuesTemplate += '</li>';
       } else if (Object.prototype.toString.call(this.env.vars[name].value) === '[object Object]') {
         valuesTemplate += '<li>';
-        valuesTemplate += '<span class="stateLabel">sets ' + name + ' to</span>';
+        valuesTemplate += '<span class="stateLabel stateToggle icon-down-dir">sets ' + name + ' to</span>';
         valuesTemplate += '<span class="stateVal">{{{ beautify(state.values.' + name + '.val) }}}</span>';
         valuesTemplate += '</li>';
       }
