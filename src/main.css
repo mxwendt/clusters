@@ -1,4 +1,15 @@
 /*------------------------------------------------------------------------------
+Settings
+------------------------------------------------------------------------------*/
+
+html {
+  box-sizing: border-box;
+}
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+/*------------------------------------------------------------------------------
 Wrapper
 ------------------------------------------------------------------------------*/
 
@@ -14,12 +25,19 @@ Wrapper
 
 .code, .data, .state {
   display: block;
-  max-width: 33%;
   padding-top: 20px;
-  margin-bottom: 50px;
   position: relative;
   float: left;
   overflow-x: scroll;
+}
+
+.code {
+  width: 30%;
+  margin-bottom: 50px;
+}
+
+.data, .state {
+  max-width: 35%;
 }
 
 /*------------------------------------------------------------------------------
@@ -237,16 +255,15 @@ State
   display: block;
   min-height: 20px;
   margin: 0;
-  line-height: 16px;
+  line-height: 20px;
 }
 
 .state > ol > li > span {
-  display: inline-block;
   white-space: pre-wrap;
 }
 
-.state > ol > li > input,
-.state > ol > li > select {
+.state > ol > li input,
+.state > ol > li select {
   display: inline-block;
   margin-left: 10px;
   vertical-align: middle;
@@ -266,8 +283,11 @@ State
   border-bottom: none;
 }
 
+.stateLabel {}
+
 .stateVal {
-  display: inline-block;
+  display: block;
+  margin-left: 10px;
   font-weight: bold;
   vertical-align: top;
 }

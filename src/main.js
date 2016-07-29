@@ -92,59 +92,61 @@ Parser.prototype.createParamNode = function (annotationNode, line) {
   newParamNode.type = line.substring(line.indexOf('{') + 1, line.indexOf('}')); // gets everything between '{' and '}', either 'Boolean', 'Number', 'String', 'Array', or 'Object'
   newParamNode.name = line.substring(line.indexOf('}') + 1, line.indexOf('=')).trim(); // should be a base identifier like 'foo' without properties (not like 'foo.bar' or similar)
 
-  let rawVals = line.substring(line.indexOf('=') + 1).trim().split(', ');
+  let rawVals = line.substring(line.indexOf('=') + 1).trim();
 
   switch (newParamNode.type) {
 
     case 'Boolean': // @param {Boolean} foo = true
-      rawVals[0] = Boolean(rawVals[0]); // there is only one value
-
-      newParamNode.init = rawVals[0];
+      newParamNode.init = Boolean(rawVals); // there is only one value
       annotationNode.params.push(newParamNode);
 
       break;
 
     case 'Number': // @param {Number} foo = 8, 0, 10
-      for (let i = 0; i < rawVals.length; i++) {
-        rawVals[i] = Number(rawVals[i]);
+      let numVals = rawVals.split(', ');
+      for (let i = 0; i < numVals.length; i++) {
+        numVals[i] = Number(numVals[i]);
       }
 
-      newParamNode.init = rawVals[0];
-      newParamNode.min = rawVals[1];
-      newParamNode.max = rawVals[2];
+      newParamNode.init = numVals[0];
+      newParamNode.min = numVals[1];
+      newParamNode.max = numVals[2];
       annotationNode.params.push(newParamNode);
 
       break;
 
     case 'String': // @param {String} foo = "blah-blah", "bluh-bluh", "blih-blih"
-      for (let j = 0; j < rawVals.length; j++) {
-        rawVals[j] = eval(rawVals[j]);
+      let strVals = rawVals.split(', ');
+      for (let j = 0; j < strVals.length; j++) {
+        strVals[j] = eval(strVals[j]);
       }
 
-      newParamNode.init = rawVals[0]; // TODO: Allow for multiple variations of strings, see README
+      newParamNode.init = strVals[0]; // TODO: Allow for multiple variations of strings, see README
       annotationNode.params.push(newParamNode);
 
       break;
 
     case 'Array': // @param {Array} foo = [0, 1, 2, 3, 4, 5], [0, 2, 4, 6, 8, 10], [3, 2, 1]
-      for (let m = 0; m < rawVals.length; m++) {
-        rawVals[m] = eval(rawVals[m]);
+      let arrVals = rawVals.split('], ');
+      for (let m = 0; m < arrVals.length; m++) {
+        arrVals[m] = eval(arrVals[m]);
       }
 
-      newParamNode.init = rawVals[0]; // TODO: Allow for multiple variations of arrays, see README
+      newParamNode.init = arrVals[0]; // TODO: Allow for multiple variations of arrays, see README
       annotationNode.params.push(newParamNode);
 
       break;
 
     case 'Object': // @param {Object} foo = {}, null
-      for (let n = 0; n < rawVals.length; n++) {
-        if (rawVals[n] === '{}') rawVals[n] = {};
-        else if (rawVals[n] === 'null') rawVals[n] = null;
-        else if (rawVals[n] === 'undefined') rawVals[n] = undefined;
-        else rawVals[n] = eval(rawVals[n]);
+      let objVals = rawVals.split(', ');
+      for (let n = 0; n < objVals.length; n++) {
+        if (objVals[n] === '{}') objVals[n] = {};
+        else if (objVals[n] === 'null') objVals[n] = null;
+        else if (objVals[n] === 'undefined') objVals[n] = undefined;
+        else objVals[n] = eval(objVals[n]);
       }
 
-      newParamNode.init = rawVals[0]; // TODO: Allow for multiple variations of arrays, see README
+      newParamNode.init = objVals[0]; // TODO: Allow for multiple variations of arrays, see README
       annotationNode.params.push(newParamNode);
 
       break;
@@ -766,23 +768,69 @@ Visualizer.prototype.markupState = function () {
     if (this.env.vars[name].properties !== undefined) {
       // parameter value
       if (this.env.vars[name].properties.type === 'Boolean') {
-        // TODO: Create inputs for boolean parameter => checkbox
+        // TODO: Evaluate if checked or not
+        paramsTemplate += '<li>';
+        paramsTemplate += '<span class="stateLabel">uses <span class="com">' + this.env.vars[name].properties.name + '</span>';
+        paramsTemplate += '<input type="checkbox" checked="checked" value="{{state.params.' + this.env.vars[name].properties.name + '.val}}"></span>';
+        paramsTemplate += '<span class="stateVal">{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
+        paramsTemplate += '</li>';
       } else if (this.env.vars[name].properties.type === 'Number') {
-        paramsTemplate += '<li>' + this.env.vars[name].properties.name + '{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}';
-        paramsTemplate += '<input type="range" min="' + this.env.vars[name].properties.min + '" max="' + this.env.vars[name].properties.max + '" value="{{state.params.' + this.env.vars[name].properties.name + '.val}}"></li>';
+        paramsTemplate += '<li>';
+        paramsTemplate += '<span class="stateLabel">uses <span class="com">' + this.env.vars[name].properties.name + '</span>';
+        paramsTemplate += '<input type="range" min="' + this.env.vars[name].properties.min + '" max="' + this.env.vars[name].properties.max + '" value="{{state.params.' + this.env.vars[name].properties.name + '.val}}"></span>';
+        paramsTemplate += '<span class="stateVal">{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
+        paramsTemplate += '</li>';
       } else if (this.env.vars[name].properties.type === 'String') {
-        paramsTemplate += '<li>' + this.env.vars[name].properties.name + '{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}';
+        paramsTemplate += '<li>';
+        paramsTemplate += '<span class="stateLabel">uses <span class="com">' + this.env.vars[name].properties.name + '</span>';
         paramsTemplate += '<select>';
-        paramsTemplate += '<option value="{{ pure(state.params.' + this.env.vars[name].properties.name + '.val) }}" selected>Example 1</option>';
-        paramsTemplate += '</select></li>';
+        paramsTemplate += '<option value="{{ pure(state.params.' + this.env.vars[name].properties.name + '.val) }}" selected>Option 1</option>';
+        paramsTemplate += '</select></span>';
+        paramsTemplate += '<span class="stateVal">{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
+        paramsTemplate += '</li>';
       } else if (this.env.vars[name].properties.type === 'Array') {
         // TODO: Create inputs for array parameter => select
+        paramsTemplate += '<li>';
+        paramsTemplate += '<span class="stateLabel">uses <span class="com">' + this.env.vars[name].properties.name + '</span>';
+        paramsTemplate += '<select>';
+        paramsTemplate += '<option value="{{ pure(state.params.' + this.env.vars[name].properties.name + '.val) }}" selected>Option 1</option>';
+        paramsTemplate += '</select></span>';
+        paramsTemplate += '<span class="stateVal">{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
+        paramsTemplate += '</li>';
       } else if (this.env.vars[name].properties.type === 'Object') {
         // TODO: Create inputs for object parameter => depending on primitive type
-        paramsTemplate += '<li>' + this.env.vars[name].properties.name + '{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}' + '</li>';
+        paramsTemplate += '<li>';
+        paramsTemplate += '<span class="stateLabel">uses <span class="com">' + this.env.vars[name].properties.name + '</span></span>';
+        paramsTemplate += '<span class="stateVal">{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
+        paramsTemplate += '</li>';
       }
     } else {
-      valuesTemplate += '<li>' + name + '{{{ beautify(state.values.' + name + '.val) }}}</li>';
+      if (Object.prototype.toString.call(this.env.vars[name].value) === '[object Boolean]') {
+        valuesTemplate += '<li>';
+        valuesTemplate += '<span class="stateLabel">sets ' + name + ' to</span>';
+        valuesTemplate += '<span class="stateVal">{{{ beautify(state.values.' + name + '.val) }}}</span>';
+        valuesTemplate += '</li>';
+      } else if (Object.prototype.toString.call(this.env.vars[name].value) === '[object Number]') {
+        valuesTemplate += '<li>';
+        valuesTemplate += '<span class="stateLabel">sets ' + name + ' to</span>';
+        valuesTemplate += '<span class="stateVal">{{{ beautify(state.values.' + name + '.val) }}}</span>';
+        valuesTemplate += '</li>';
+      } else if (Object.prototype.toString.call(this.env.vars[name].value) === '[object String]') {
+        valuesTemplate += '<li>';
+        valuesTemplate += '<span class="stateLabel">sets ' + name + ' to</span>';
+        valuesTemplate += '<span class="stateVal">{{{ beautify(state.values.' + name + '.val) }}}</span>';
+        valuesTemplate += '</li>';
+      } else if (Object.prototype.toString.call(this.env.vars[name].value) === '[object Array]') {
+        valuesTemplate += '<li>';
+        valuesTemplate += '<span class="stateLabel">sets ' + name + ' to</span>';
+        valuesTemplate += '<span class="stateVal">{{{ beautify(state.values.' + name + '.val) }}}</span>';
+        valuesTemplate += '</li>';
+      } else if (Object.prototype.toString.call(this.env.vars[name].value) === '[object Object]') {
+        valuesTemplate += '<li>';
+        valuesTemplate += '<span class="stateLabel">sets ' + name + ' to</span>';
+        valuesTemplate += '<span class="stateVal">{{{ beautify(state.values.' + name + '.val) }}}</span>';
+        valuesTemplate += '</li>';
+      }
     }
   }
 
@@ -817,10 +865,10 @@ Visualizer.prototype.markupState = function () {
     data: {
       state: self.ractiveData,
       raw: function (val) {
-        if (val !== undefined) return ' = <span class="stateVal">' + val + '</span>';
+        if (val !== undefined) return val;
       },
       beautify: function (val) {
-        if (val !== undefined) return ' = <span class="stateVal">' + self.parser.beautify(val) + '</span>';
+        if (val !== undefined) return self.parser.beautify(val);
       },
       pure: function (val) {
         if (val !== undefined && typeof(val) === 'string') return val.substring(1, val.length - 1);
