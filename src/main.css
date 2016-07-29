@@ -82,7 +82,7 @@ ol.linenums > li {
   list-style-type: none;
 }
 
-ol.linenums > li.is-highlighted {
+.cluster.is-active ol.linenums > li.is-highlighted {
   background-color: yellow;
 }
 
