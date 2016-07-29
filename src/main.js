@@ -158,10 +158,11 @@ Parser.prototype.createParamNode = function (annotationNode, line) {
 
 Parser.prototype.updateParamNode = function (annotationNode, line, nameParts) {
   let existingParamNode;
+  let newParamNodeName = nameParts.shift();
   let newParamNodeProp = Object.create(null);
 
   for (let i = 0; i < annotationNode.params.length; i++) {
-    if (annotationNode.params[i].name === nameParts.shift()) {
+    if (annotationNode.params[i].name === newParamNodeName) {
       existingParamNode = annotationNode.params[i];
     }
   }
@@ -254,10 +255,17 @@ Walker.prototype.walk = function (ast, annotations) {
   let self = this;
 
   acorn.walk.recursive(ast, [this], {
-    FunctionDeclaration: function (functionNode, state/*, c*/) {
+    FunctionDeclaration: function (functionNode, state/*, c*/) { // i.e. function Foo () {} or function fooBar() {}
       let annotationNode = self.findAnnotation(annotations, functionNode.loc);
       if (annotationNode !== undefined) {
         state[0].cluster = new Cluster(functionNode, annotationNode);
+        state[0].visualizer = new Visualizer(self.parser, self, self.elem);
+      }
+    },
+    ExpressionStatement: function (functionNode, state/*, c*/) { // i.e. Foo.prototype.bar = function () {}
+      let annotationNode = self.findAnnotation(annotations, functionNode.loc);
+      if (annotationNode !== undefined) {
+        state[0].cluster = new Cluster(functionNode.expression.right, annotationNode);
         state[0].visualizer = new Visualizer(self.parser, self, self.elem);
       }
     }
@@ -402,7 +410,7 @@ function Cluster (functionDeclarationNode, annotationNode) {
 
   // TODO: move global variables to its own area in the state view
   // Set global variables
-  this.env.def('this', {}, 0);
+  // this.env.def('this', {}, 0);
 
   // Add params to the environment
   this.iterParams(functionDeclarationNode.params, annotationNode);

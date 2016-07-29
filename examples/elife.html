@@ -45,6 +45,9 @@ var directions = {
         <pre>
             /**
              * @cluster
+             *
+             * @param {Object} this = {}
+             * @param {Object} this.direction = {}
              */
             function BouncingCritter() {
                 this.direction = randomElement(directionNames);
@@ -56,8 +59,13 @@ var directions = {
         <pre>
             /**
              * @cluster
+             *
              * @param {Number} x = 3, 0, 10
              * @param {Number} y = 4, 0, 10
+             *
+             * @param {Object} this = {}
+             * @param {Number} this.x = 0, 0, 0
+             * @param {Number} this.y = 0, 0, 0
              */
             function Vector(x, y) {
                 this.x = x;
@@ -70,14 +78,39 @@ var directions = {
         <pre>
             /**
              * @cluster
+             *
              * @param {Number} width = 5, 1, 10
              * @param {Number} height = 5, 1, 10
+             *
+             * @param {Object} this = {}
+             * @param {Array}  this.space = []
+             * @param {Number} this.width = 0, 0, 0
+             * @param {Number} this.height = 0, 0, 0
              */
             function Grid(width, height) {
                 this.space = new Array(width * height);
                 this.width = width;
                 this.height = height;
             }
+        </pre>
+    </div>
+
+    <div class="snippet">
+        <pre>
+            /**
+             * @cluster
+             *
+             * @param {Object} vector = {}
+             * @param {Number} vector.x = 1, 1, 10
+             * @param {Number} vector.y = 3, 1, 10
+             *
+             * @this {Object} this = {}
+             * @this {Number} this.width = 2, 2, 5
+             * @this {Number} this.height = 3, 2, 5
+             */
+            Grid.prototype.isInside = function(vector) {
+                return vector.x >= 0 && vector.x < this.width && vector.y >= 0 && vector.y < this.height;
+            };
         </pre>
     </div>
 
