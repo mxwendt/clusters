@@ -33,6 +33,20 @@ var plan = [
     <div class="snippet">
         <pre>
             /**
+             * @param {Number} width = 5, 1, 10
+             * @param {Number} height = 5, 1, 10
+             */
+            function Grid(width, height) {
+                this.space = new Array(width * height);
+                this.width = width;
+                this.height = height;
+            }
+        </pre>
+    </div>
+
+    <div class="snippet">
+        <pre>
+            /**
              * @param {Object} element = {}
              * @param {String} element.originChar = "#", "o", " "
              */
