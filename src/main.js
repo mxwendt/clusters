@@ -358,7 +358,11 @@ Cluster.prototype.iter = function (node) {
 
       // the return statement is the only statement that changes the environment directly
       if (node.argument !== null) {
-        this.env.set(node.argument.name, this.evaluate(node.argument, this.execution.length), this.execution.length);
+        if (node.argument.type === 'Identifier') {
+          this.env.set(node.argument.name, this.evaluate(node.argument, this.execution.length), this.execution.length);
+        } else if (node.argument.type === 'MemberExpression') {
+          this.evaluate(node.argument);
+        }
       }
 
       break;
