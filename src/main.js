@@ -537,6 +537,20 @@ Cluster.prototype.evaluate = function (node, step) {
     case 'NewExpression':
       if (node.arguments.length === 0) { // {}
         return {};
+      } else {
+        if (node.callee.type === 'Identifier') {
+          switch (node.callee.name) {
+            case 'Array':
+              if (node.arguments.length === 1 && typeof(this.evaluate(node.arguments[0])) === 'number') {
+                // only one argument that is a number returns a new Array with length set to that number
+                return new Array(this.evaluate(node.arguments[0]));
+              }
+
+              break;
+            default:
+              throw new Error('I don\'t know how to instantiate a new ' + node.callee.name);
+          }
+        }
       }
 
       break;
