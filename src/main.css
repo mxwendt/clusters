@@ -5,8 +5,13 @@ Settings
 html {
   box-sizing: border-box;
 }
+
 *, *:before, *:after {
   box-sizing: inherit;
+}
+
+.is-hidden {
+  display: none;
 }
 
 /*------------------------------------------------------------------------------
@@ -272,14 +277,14 @@ State
 .stateProps,
 .stateParams,
 .stateValues {
+  padding-top: 5px;
   padding-bottom: 5px;
-  border-bottom: 1px solid black;
+  border-top: 1px solid black;
 }
 
 .stateParams:last-child,
 .stateValues:last-child,
 .stateReturns:last-child {
-  padding-bottom: 0;
   border-bottom: none;
 }
 
@@ -290,4 +295,15 @@ State
   margin-left: 10px;
   font-weight: bold;
   vertical-align: top;
+}
+
+.stateToggle {
+  font-family: monospace;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.stateToggle:hover {
+  cursor: pointer;
+  color: rgb(236, 94, 93);
 }

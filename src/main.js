@@ -761,8 +761,8 @@ Visualizer.prototype.markupState = function () {
 
   // Template
 
-  let paramsTemplate = '<ol class="stateParams">';
-  let valuesTemplate = '<ol class="stateValues">';
+  let paramsTemplate = '<div class="stateToggle icon-down-dir">Parameter</div><ol class="stateParams">';
+  let valuesTemplate = '<div class="stateToggle icon-down-dir">State</div><ol class="stateValues">';
 
   for (let name in this.env.vars) {
     if (this.env.vars[name].properties !== undefined) {
@@ -1002,6 +1002,8 @@ UI.prototype.addExecutionSlider = function () {
 
   this.highlightLine();
   this.highlightDot();
+
+  this.addStateToggles();
 };
 
 UI.prototype.highlightLine = function () {
@@ -1067,6 +1069,18 @@ UI.prototype.onExecutionSliderInput = function (e) {
 
 UI.prototype.getExecSlider = function () {
   return this.execSlider;
+};
+
+UI.prototype.addStateToggles = function () {
+  let stateToggleElems = this.vis.wrapper.querySelectorAll('.stateToggle');
+
+  for (let i = 0; i < stateToggleElems.length; i++) {
+    stateToggleElems[i].addEventListener('click', function (e) {
+      e.target.classList.toggle('icon-down-dir');
+      e.target.classList.toggle('icon-right-dir');
+      e.target.nextElementSibling.classList.toggle('is-hidden');
+    });
+  }
 };
 
 
