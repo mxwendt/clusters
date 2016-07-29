@@ -305,13 +305,19 @@ State
   border-bottom: none;
 }
 
-.stateLabel {}
+.stateLabel {
+  font-size: 11px;
+}
 
 .stateVal {
   display: block;
   margin-left: 10px;
   font-weight: bold;
   vertical-align: top;
+}
+
+.stateVal.is-last-updated {
+  color: rgb(236, 94, 93);
 }
 
 .stateToggle {

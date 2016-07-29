@@ -787,13 +787,13 @@ Visualizer.prototype.markupState = function () {
         paramsTemplate += '<li>';
         paramsTemplate += '<span class="stateLabel">uses <span class="com">' + this.env.vars[name].properties.name + '</span>';
         paramsTemplate += '<input type="checkbox" checked="checked" value="{{state.params.' + this.env.vars[name].properties.name + '.val}}"></span>';
-        paramsTemplate += '<span class="stateVal">{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
+        paramsTemplate += '<span class="stateVal">{{{ beautify(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
         paramsTemplate += '</li>';
       } else if (this.env.vars[name].properties.type === 'Number') {
         paramsTemplate += '<li>';
         paramsTemplate += '<span class="stateLabel">uses <span class="com">' + this.env.vars[name].properties.name + '</span>';
         paramsTemplate += '<input type="range" min="' + this.env.vars[name].properties.min + '" max="' + this.env.vars[name].properties.max + '" value="{{state.params.' + this.env.vars[name].properties.name + '.val}}"></span>';
-        paramsTemplate += '<span class="stateVal">{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
+        paramsTemplate += '<span class="stateVal">{{{ beautify(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
         paramsTemplate += '</li>';
       } else if (this.env.vars[name].properties.type === 'String') {
         paramsTemplate += '<li>';
@@ -801,7 +801,7 @@ Visualizer.prototype.markupState = function () {
         paramsTemplate += '<select>';
         paramsTemplate += '<option value="{{ pure(state.params.' + this.env.vars[name].properties.name + '.val) }}" selected>Option 1</option>';
         paramsTemplate += '</select></span>';
-        paramsTemplate += '<span class="stateVal">{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
+        paramsTemplate += '<span class="stateVal">{{{ beautify(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
         paramsTemplate += '</li>';
       } else if (this.env.vars[name].properties.type === 'Array') {
         // TODO: Create inputs for array parameter => select
@@ -810,13 +810,13 @@ Visualizer.prototype.markupState = function () {
         paramsTemplate += '<select>';
         paramsTemplate += '<option value="{{ pure(state.params.' + this.env.vars[name].properties.name + '.val) }}" selected>Option 1</option>';
         paramsTemplate += '</select></span>';
-        paramsTemplate += '<span class="stateVal">{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
+        paramsTemplate += '<span class="stateVal">{{{ beautify(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
         paramsTemplate += '</li>';
       } else if (this.env.vars[name].properties.type === 'Object') {
         // TODO: Create inputs for object parameter => depending on primitive type
         paramsTemplate += '<li>';
         paramsTemplate += '<span class="stateLabel">uses <span class="com">' + this.env.vars[name].properties.name + '</span></span>';
-        paramsTemplate += '<span class="stateVal">{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
+        paramsTemplate += '<span class="stateVal">{{{ beautify(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
         paramsTemplate += '</li>';
       }
     } else {
@@ -1070,7 +1070,7 @@ UI.prototype.updateState = function () {
 
   for (let value in this.vis.ractive.get().state.values) {
     // if (this.vis.ractive.values.hasOwnProperty(value)) {}
-    this.vis.ractive.set('state.values.' + value + '.val', this.vis.env.getAtStep(value, step));
+    let promise = this.vis.ractive.set('state.values.' + value + '.val', this.vis.env.getAtStep(value, step));
   }
 };
 
