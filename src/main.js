@@ -433,7 +433,7 @@ Cluster.prototype.iter = function (node) {
   switch (node.type) {
 
     case 'VariableDeclaration':
-      this.execution.push(node.loc.start.line);
+      this.execution.push({lineNum: node.loc.start.line, nodeType: 'VariableDeclaration'});
 
       for (var i = 0; i < node.declarations.length; i++) {
         this.evaluate(node.declarations[i], this.execution.length);
@@ -442,11 +442,13 @@ Cluster.prototype.iter = function (node) {
       break;
 
     case 'IfStatement':
-      this.execution.push(node.loc.start.line);
+
 
       if (this.evaluate(node.test, this.execution.length) === true) {
+        this.execution.push({lineNum: node.loc.start.line, nodeType: 'IfStatement', val: true});
         this.iterBlockStatements(node.consequent);
       } else if (this.evaluate(node.test, this.execution.length) === false) {
+        this.execution.push({lineNum: node.loc.start.line, nodeType: 'IfStatement', val: false});
         if (node.alternate !== null) {
           if (node.alternate.type === 'BlockStatement') {
             this.iterBlockStatements(node.alternate);
@@ -459,17 +461,17 @@ Cluster.prototype.iter = function (node) {
       break;
 
     case 'WhileStatement':
-      this.execution.push(node.loc.start.line);
-
       while (this.evaluate(node.test, this.execution.length + 1) === true) {
+        this.execution.push({lineNum: node.loc.start.line, nodeType: 'WhileStatement', val: true});
         this.iterBlockStatements(node.body);
-        this.execution.push(node.loc.start.line);
       }
+
+      this.execution.push({lineNum: node.loc.start.line, nodeType: 'WhileStatement', val: false});
 
       break;
 
     case 'ForStatement':
-      this.execution.push(node.loc.start.line);
+      this.execution.push({lineNum: node.loc.start.line, nodeType: 'ForStatement'});
 
       for (var j = 0; j < node.init.declarations.length; j++) {
         this.evaluate(node.init.declarations[j], this.execution.length);
@@ -478,20 +480,20 @@ Cluster.prototype.iter = function (node) {
       while (this.evaluate(node.test, this.execution.length) === true) {
         this.iterBlockStatements(node.body);
         this.evaluate(node.update, this.execution.length);
-        this.execution.push(node.loc.start.line);
+        this.execution.push({lineNum: node.loc.start.line, nodeType: 'ForStatement'});
       }
 
       break;
 
     case 'ExpressionStatement':
-      this.execution.push(node.loc.start.line);
+      this.execution.push({lineNum: node.loc.start.line, nodeType: 'ExpressionStatement'});
 
       this.evaluate(node.expression, this.execution.length);
 
       break;
 
     case 'ReturnStatement':
-      this.execution.push(node.loc.start.line);
+      this.execution.push({lineNum: node.loc.start.line, nodeType: 'ReturnStatement'});
 
       // the return statement is the only statement that changes the environment directly
       if (node.argument !== null) {
@@ -505,7 +507,7 @@ Cluster.prototype.iter = function (node) {
       break;
 
     case 'ContinueStatement':
-      this.execution.push(node.loc.start.line);
+      this.execution.push({lineNum: node.loc.start.line, nodeType: 'ContinueStatement'});
 
       break;
 
@@ -707,6 +709,7 @@ function Visualizer (parser, walker, elem) {
   this.codeStr = this.parser.getCodeStr();
   this.execution = this.walker.cluster.execution;
   this.env = this.walker.cluster.env;
+  this.svg;
 
   this.ractive;
   this.ractiveData;
@@ -895,23 +898,23 @@ Visualizer.prototype.markupState = function () {
 Visualizer.prototype.visualizeExecution = function () {
   let self = this;
 
-  let svg = d3.select(this.dataWrapper)
+  this.svg = d3.select(this.dataWrapper)
     .append('svg')
       .attr('width', 0)
       .attr('height', this.getH())
       .style('background-image', 'repeating-linear-gradient(180deg, rgba(248, 248, 248, 0.6), rgba(248, 248, 248, 0.6) ' +
         self.getLineH() + 'px, rgba(255, 255, 255, 0.6) ' + self.getLineH() + 'px, rgba(255, 255, 255, 0.6) ' + (self.getLineH() * 2) + 'px)');
 
-  let xAxis = svg.append("g")
+  this.xAxis = this.svg.append("g")
     .attr("class", "axis");
 
-  svg.attr('width', this.getW());
+  this.svg.attr('width', this.getW());
 
   let x = d3.scale.ordinal().domain(d3.range(this.execution.length + 2)).rangePoints([0, (this.getExecution().length + 2) * 10]);
   let y = d3.scale.ordinal().domain(d3.range(this.getLineCount())).rangePoints([0, (this.getLineCount() - 1) * this.getLineH()]);
 
   // JOIN new data with old elements
-  this.dots = svg.selectAll('.dot')
+  this.dots = this.svg.selectAll('.dot')
       .data(this.execution);
 
   // EXIT old elements not present in new data
@@ -919,22 +922,22 @@ Visualizer.prototype.visualizeExecution = function () {
 
   // UPDATE old elements present in new data
   this.dots.attr('cx', function(d, i) { return x(i + 1); })
-      .attr('cy', function(d, i) { return y(d) - Math.ceil(self.getLineH() / 2); });
+    .attr('cy', function(d, i) { return y(d.lineNum) - Math.ceil(self.getLineH() / 2); });
 
   // ENTER new elements present in new data
   this.dots.enter().append('circle')
-      .attr('class', function(d, i) { return 'dot' + ' ' + d; })
-      .attr('cx', function(d, i) { return x(i + 1); })
-      .attr('cy', function(d, i) { return y(d) - Math.ceil(self.getLineH() / 2); })
-      .attr('r', 4);
+    .attr('class', function(d, i) { return 'dot' + ' ' + d.lineNum + ' ' + d.nodeType + ' ' + d.val; })
+    .attr('cx', function(d, i) { return x(i + 1); })
+    .attr('cy', function(d, i) { return y(d.lineNum) - Math.ceil(self.getLineH() / 2); })
+    .attr('r', 3);
 
   this.dots.on('mouseover', function() {
     if (! this.classList.contains('is-active')) {
-      this.setAttribute('stroke', '#EC5E5D');
+      // this.setAttribute('stroke', '#EC5E5D');
     }
   }).on('mouseout', function() {
     if (! this.classList.contains('is-active')) {
-      this.setAttribute('stroke', '#FFFFFF');
+      // this.setAttribute('stroke', '#FFFFFF');
     }
   }).on('click', function(d, i) {
     if (! this.classList.contains('is-active')) {
@@ -943,11 +946,18 @@ Visualizer.prototype.visualizeExecution = function () {
     }
   });
 
-  let axis = d3.svg.axis()
+  this.axis = d3.svg.axis()
     .scale(x)
     .orient('top');
 
-  xAxis.call(axis);
+  this.xAxis.call(this.axis);
+
+  this.stepLine = this.xAxis.append('rect')
+    .attr('class', 'stepLine')
+    .attr('x', 0)
+    .attr('y', 0)
+    .attr('width', 0)
+    .attr('height', this.getH());
 };
 
 Visualizer.prototype.getW = function () {
@@ -996,6 +1006,7 @@ Visualizer.prototype.getEnvironment = function () {
 
 function UI (visualizer) {
   this.vis = visualizer;
+  this.lastStep = 1;
 
   this.addExecutionSlider();
 }
@@ -1016,7 +1027,7 @@ UI.prototype.addExecutionSlider = function () {
   this.vis.dataWrapper.appendChild(this.execSlider);
 
   this.highlightLine();
-  this.highlightDot();
+  this.updateStepLine();
 
   this.addStateToggles();
 };
@@ -1025,7 +1036,7 @@ UI.prototype.highlightLine = function () {
   this.unhighlightLine();
 
   let step = this.execSlider !== undefined ? this.execSlider.value : 0;
-  let line = this.vis.codeWrapper.querySelector('ol.linenums').children[this.vis.execution[step] - 1];
+  let line = this.vis.codeWrapper.querySelector('ol.linenums').children[this.vis.execution[step].lineNum - 1];
 
   line.classList.add('is-highlighted');
 };
@@ -1040,24 +1051,15 @@ UI.prototype.unhighlightLine = function () {
   }
 };
 
-UI.prototype.highlightDot = function () {
-  let self = this;
+UI.prototype.updateStepLine = function () {
+  let ticks = this.vis.xAxis.selectAll('.tick');
 
-  this.unhighlightDot();
-
-  this.vis.dots.each(function(d, i) {
-    if (i == self.execSlider.value) {
-      this.classList.add('is-active');
+  for (let j = 0; j < ticks[0].length; j++) {
+    if (j == this.execSlider.value) {
+      let transformAttr = ticks[0][j + 1].getAttribute('transform');
+      this.vis.stepLine.attr('width', transformAttr.substring(transformAttr.indexOf('(') + 1, transformAttr.indexOf(',')));
     }
-  });
-};
-
-UI.prototype.unhighlightDot = function () {
-  this.vis.dots.each(function(d, i) {
-    if (this.classList.contains('is-active')) {
-      this.classList.remove('is-active');
-    }
-  });
+  }
 };
 
 UI.prototype.updateState = function () {
@@ -1078,7 +1080,7 @@ UI.prototype.onExecutionSliderInput = function (e) {
   e.stopPropagation();
 
   this.highlightLine();
-  this.highlightDot();
+  this.updateStepLine();
   this.updateState();
 };
 
@@ -1131,6 +1133,10 @@ function createNestedObj (base, propNames, value) {
   if (lastPropName) base = base[lastPropName] = value;
 
   return base;
+}
+
+function matrixToArray(str) {
+  return str.match(/(-?[0-9\.]+)/g);
 }
 
 //! INIT .......................................................................

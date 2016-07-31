@@ -41,7 +41,7 @@ Wrapper
 }
 
 .cluster.is-active .code {
-  width: 30%;
+  max-width: 30%;
 }
 
 .data, .state {
@@ -237,18 +237,40 @@ Execution - Dot
 ------------------------------------------------------------------------------*/
 
 .dot {
-  stroke: #FFFFFF;
-  stroke-width: 2;
+  /*stroke: #FFFFFF;*/
+  /*stroke-width: 2;*/
+}
+
+.dot.VariableDeclaration {
+  fill: rgb(16, 16, 148);
+}
+
+.dot.WhileStatement.true,
+.dot.IfStatement.true {
+  fill: rgb(190, 255, 24);
+}
+
+.dot.WhileStatement.false,
+.dot.IfStatement.false {
+  fill: rgb(255, 0, 0);
 }
 
 .dot:hover {
   cursor: pointer;
-  stroke: #EC5E5D;
+  /*stroke-width: 2;*/
+  /*stroke: inherit;*/
 }
 
 .dot.is-active {
   cursor: default;
-  stroke: #EC5E5D;
+  /*stroke: #EC5E5D;*/
+}
+
+.stepLine {
+  stroke: black;
+  stroke-width: 1;
+  fill: rgb(240, 248, 255);
+  opacity: 0.4;
 }
 
 /*------------------------------------------------------------------------------
