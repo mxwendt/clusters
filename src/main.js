@@ -1055,6 +1055,7 @@ function UI (visualizer) {
 
   this.addToggleButton();
   this.addExecutionSlider();
+  this.addResizeHandle();
 }
 
 UI.prototype.addToggleButton = function () {
@@ -1103,6 +1104,44 @@ UI.prototype.addExecutionSlider = function () {
   this.updateStepLine();
 
   this.addStateToggles();
+};
+
+UI.prototype.addResizeHandle = function () {
+  let self = this;
+
+  this.resizeHandle = document.createElement('div');
+  this.resizeHandle.classList.add('resizeHandle');
+
+  this.isResizing = false;
+
+  this.resizeHandle.addEventListener('mousedown', function (e) {
+    self.isResizing = true;
+    self.lastDownX = e.clientX;
+    console.log("mousedown");
+  });
+
+  this.vis.getWrapper().addEventListener('mousemove', function (e) {
+    if (! self.isResizing) return false; // return if we don't resize
+
+    console.log("mousemove");
+  });
+
+  this.vis.getWrapper().addEventListener('mouseup', function (e) {
+    self.isResizing = false;
+    console.log("mouseup");
+  });
+
+  // Hide the resize handle if all data is visible
+
+  window.addEventListener('resize', function (e) {
+    if (self.vis.dataWrapperW >= self.vis.getW()) {
+      self.resizeHandle.classList.add('is-hidden');
+    } else {
+      self.resizeHandle.classList.remove('is-hidden');
+    }
+  });
+
+  this.vis.getDataWrapper().appendChild(this.resizeHandle);
 };
 
 UI.prototype.highlightLine = function () {

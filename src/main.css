@@ -64,6 +64,29 @@ Wrapper
   color: rgb(236, 94, 93);
 }
 
+.resizeHandle {
+  display: block;
+  width: 9px;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  cursor: col-resize;
+  z-index: 1;
+}
+
+.resizeHandle:after {
+  content: '';
+  display: block;
+  width: 1px;
+  margin-left: 4px;
+  height: 100%;
+  background-color: rgb(208, 208, 208);
+}
+
+.state {
+  padding-left: 10px;
+}
+
 /*------------------------------------------------------------------------------
 Google Code Prettify
 ------------------------------------------------------------------------------*/
