@@ -726,11 +726,8 @@ function Visualizer (parser, walker, elem) {
   this.ui = new UI(this);
 
   window.addEventListener('resize', function (e) {
-    self.dataWrapperW = self.calcDataWrapperW();
-    self.stateWrapperW = self.calcStateWrapperW();
-
-    self.dataWrapper.style.maxWidth = self.dataWrapperW + 'px';
-    self.stateWrapper.style.maxWidth = self.stateWrapperW + 'px';
+    self.setDataWrapperW(self.calcDataWrapperW());
+    self.setStateWrapperW(self.calcStateWrapperW());
   });
 }
 
@@ -771,15 +768,9 @@ Visualizer.prototype.markupCode = function (codeStr) {
 };
 
 Visualizer.prototype.calcWrapperWidths = function () {
-  // Set width of code, data, and state wrapper
-
-  this.codeWrapperW = this.calcCodeWrapperW();
-  this.dataWrapperW = this.calcDataWrapperW();
-  this.stateWrapperW = this.calcStateWrapperW();
-
-  this.codeWrapper.style.maxWidth = this.codeWrapperW + 'px';
-  this.dataWrapper.style.maxWidth = this.dataWrapperW + 'px';
-  this.stateWrapper.style.maxWidth = this.stateWrapperW + 'px';
+  this.setCodeWrapperW(this.calcCodeWrapperW() + 15);
+  this.setDataWrapperW(this.calcDataWrapperW());
+  this.setStateWrapperW(this.calcStateWrapperW());
 };
 
 Visualizer.prototype.markupState = function () {
@@ -981,8 +972,8 @@ Visualizer.prototype.getLineH = function () {
 };
 
 Visualizer.prototype.calcCodeWrapperW = function () {
-  let w = 500; // minimum width of code that allows for a good display of all possible annotations
   let lineElems = this.codeWrapper.querySelectorAll('ol.linenums > li');
+  let w = 500; // minimum width of code that allows for a good display of all possible annotations
 
   for (var i = 0; i < lineElems.length; i++) {
     if (! lineElems[i].querySelector('code > .com')) {
@@ -993,21 +984,48 @@ Visualizer.prototype.calcCodeWrapperW = function () {
     }
   }
 
-  return Math.floor(w + 15);
+  return Math.floor(w);
 };
 
 Visualizer.prototype.calcDataWrapperW = function () {
   if (this.codeWrapperW === undefined) this.codeWrapperW = this.calcCodeWrapperW();
-  return Math.floor((document.body.clientWidth - this.codeWrapperW) / 2);
+
+  let dataAndStateW = this.wrapper.clientWidth - this.codeWrapperW;
+  let percW = 0.5;
+
+  return Math.floor(dataAndStateW * percW);
 };
 
 Visualizer.prototype.calcStateWrapperW = function () {
   if (this.codeWrapperW === undefined) this.codeWrapperW = this.calcCodeWrapperW();
-  return Math.floor((document.body.clientWidth - this.codeWrapperW) / 2);
+
+  let dataAndStateW = this.wrapper.clientWidth - this.codeWrapperW;
+  let percW = 0.5;
+
+  return Math.floor(dataAndStateW * percW);
+};
+
+Visualizer.prototype.setCodeWrapperW = function (w) {
+  this.codeWrapperW = w;
+  this.codeWrapper.style.maxWidth = this.codeWrapperW + 'px';
+};
+
+Visualizer.prototype.setDataWrapperW = function (w) {
+  this.dataWrapperW = w;
+  this.dataWrapper.style.maxWidth = this.dataWrapperW + 'px';
+};
+
+Visualizer.prototype.setStateWrapperW = function (w) {
+  this.stateWrapperW = w;
+  this.stateWrapper.style.maxWidth = this.stateWrapperW + 'px';
 };
 
 Visualizer.prototype.getLineCount = function () {
   return this.codeWrapper.querySelector('ol.linenums').children.length;
+};
+
+Visualizer.prototype.getWrapper = function () {
+  return this.wrapper;
 };
 
 Visualizer.prototype.getDataWrapper = function () {

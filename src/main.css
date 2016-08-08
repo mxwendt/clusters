@@ -19,6 +19,8 @@ Wrapper
 ------------------------------------------------------------------------------*/
 
 .cluster, .snippet {
+  display: block;
+  width: 100%;
   margin-top: 30px;
 }
 
@@ -31,6 +33,7 @@ Wrapper
 .code, .data, .state {
   display: block;
   padding-top: 20px;
+  vertical-align: top;
   position: relative;
   float: left;
   overflow-x: scroll;
@@ -40,6 +43,13 @@ Wrapper
   margin-bottom: 50px;
 }
 
+.cluster.is-active .code,
+.cluster.is-active .data,
+.cluster.is-active .state {
+  max-width: 33%;
+}
+
+/*TODO: Rename to gfxToggle */
 .wrapperToggle {
   position: absolute;
   top: 0;
