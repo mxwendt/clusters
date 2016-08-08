@@ -82,6 +82,17 @@ ol.linenums > li {
   list-style-type: none;
 }
 
+ol.linenums > li > code {
+  display: inline-block;
+  max-width: 100%;
+}
+
+ol.linenums > li > code > span.com {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .cluster.is-active ol.linenums > li.is-highlighted {
   background-color: yellow;
 }
