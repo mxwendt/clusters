@@ -950,13 +950,6 @@ Visualizer.prototype.visualizeExecution = function () {
     .orient('top');
 
   this.xAxis.call(this.axis);
-
-  this.stepLine = this.xAxis.append('rect')
-    .attr('class', 'stepLine')
-    .attr('x', 0)
-    .attr('y', 0)
-    .attr('width', 0)
-    .attr('height', this.getH());
 };
 
 Visualizer.prototype.getW = function () {
@@ -1096,6 +1089,15 @@ UI.prototype.addExecutionSlider = function () {
   this.execSlider.addEventListener('input', this.onExecutionSliderInput.bind(this), false);
 
   this.vis.dataWrapper.appendChild(this.execSlider);
+
+  // show position of execution
+
+  this.vis.stepLine = this.vis.xAxis.append('rect')
+    .attr('class', 'stepLine')
+    .attr('x', 0)
+    .attr('y', 0)
+    .attr('width', 0)
+    .attr('height', this.vis.getH());
 
   this.highlightLine();
   this.updateStepLine();

@@ -280,10 +280,8 @@ Execution - Dot
 }
 
 .stepLine {
-  stroke: black;
-  stroke-width: 1;
-  fill: rgb(240, 248, 255);
-  opacity: 0.4;
+  fill: rgb(213, 213, 213);
+  opacity: 0.2;
 }
 
 /*------------------------------------------------------------------------------
@@ -303,7 +301,7 @@ State
 
 .state > ol {
   padding-left: 0;
-  margin: 0 0 5px 10px;
+  margin: 0 0 5px 0;
   font-family: monospace;
   list-style: none;
 }
