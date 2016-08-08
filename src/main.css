@@ -40,14 +40,6 @@ Wrapper
   margin-bottom: 50px;
 }
 
-.cluster.is-active .code {
-  max-width: 30%;
-}
-
-.data, .state {
-  max-width: 35%;
-}
-
 .wrapperToggle {
   position: absolute;
   top: 0;

@@ -703,6 +703,8 @@ Cluster.prototype.getEnv = function () {
  */
 
 function Visualizer (parser, walker, elem) {
+  let self = this;
+
   this.parser = parser;
   this.walker = walker;
   this.elem = elem;
@@ -717,10 +719,19 @@ function Visualizer (parser, walker, elem) {
 
   this.markupWrapper();
   this.markupCode(this.codeStr);
+  this.calcWrapperWidths();
   this.visualizeExecution();
   this.markupState();
 
   this.ui = new UI(this);
+
+  window.addEventListener('resize', function (e) {
+    self.dataWrapperW = self.calcDataWrapperW();
+    self.stateWrapperW = self.calcStateWrapperW();
+
+    self.dataWrapper.style.maxWidth = self.dataWrapperW + 'px';
+    self.stateWrapper.style.maxWidth = self.stateWrapperW + 'px';
+  });
 }
 
 Visualizer.prototype.markupWrapper = function () {
@@ -741,12 +752,9 @@ Visualizer.prototype.markupWrapper = function () {
   this.wrapper.appendChild(this.stateWrapper);
 
   this.elem.replaceChild(this.wrapper, this.elem.firstElementChild);
-  // document.querySelector('body').replace(this.wrapper, this.wrapper);
 };
 
 Visualizer.prototype.markupCode = function (codeStr) {
-  let self = this;
-
   // Pretty print the beautified code (theme copied from Stack Overflow)
 
   let pre = document.createElement('pre');
@@ -760,20 +768,18 @@ Visualizer.prototype.markupCode = function (codeStr) {
   this.codeWrapper.appendChild(pre);
 
   prettyPrint();
+};
 
-  // Add the toggle button for the graphical supplements
+Visualizer.prototype.calcWrapperWidths = function () {
+  // Set width of code, data, and state wrapper
 
-  this.wrapperToggle = document.createElement('div');
-  this.wrapperToggle.classList.add('wrapperToggle', 'icon-right-dir');
-  this.wrapperToggle.addEventListener('click', function (e) {
-    e.target.classList.toggle('icon-right-dir');
-    e.target.classList.toggle('icon-left-dir');
-    self.wrapper.classList.toggle('is-active');
-    self.dataWrapper.classList.toggle('is-hidden');
-    self.stateWrapper.classList.toggle('is-hidden');
-  });
+  this.codeWrapperW = this.calcCodeWrapperW();
+  this.dataWrapperW = this.calcDataWrapperW();
+  this.stateWrapperW = this.calcStateWrapperW();
 
-  this.codeWrapper.querySelector('ol.linenums').firstElementChild.appendChild(this.wrapperToggle);
+  this.codeWrapper.style.maxWidth = this.codeWrapperW + 'px';
+  this.dataWrapper.style.maxWidth = this.dataWrapperW + 'px';
+  this.stateWrapper.style.maxWidth = this.stateWrapperW + 'px';
 };
 
 Visualizer.prototype.markupState = function () {
@@ -974,6 +980,32 @@ Visualizer.prototype.getLineH = function () {
   return this.codeWrapper.querySelector('ol.linenums').children[0].clientHeight;
 };
 
+Visualizer.prototype.calcCodeWrapperW = function () {
+  let w = 500; // minimum width of code that allows for a good display of all possible annotations
+  let lineElems = this.codeWrapper.querySelectorAll('ol.linenums > li');
+
+  for (var i = 0; i < lineElems.length; i++) {
+    if (! lineElems[i].querySelector('code > .com')) {
+      let codeElemW = lineElems[i].querySelector('code').clientWidth;
+      if (codeElemW > w) {
+        w = codeElemW;
+      }
+    }
+  }
+
+  return Math.floor(w + 15);
+};
+
+Visualizer.prototype.calcDataWrapperW = function () {
+  if (this.codeWrapperW === undefined) this.codeWrapperW = this.calcCodeWrapperW();
+  return Math.floor((document.body.clientWidth - this.codeWrapperW) / 2);
+};
+
+Visualizer.prototype.calcStateWrapperW = function () {
+  if (this.codeWrapperW === undefined) this.codeWrapperW = this.calcCodeWrapperW();
+  return Math.floor((document.body.clientWidth - this.codeWrapperW) / 2);
+};
+
 Visualizer.prototype.getLineCount = function () {
   return this.codeWrapper.querySelector('ol.linenums').children.length;
 };
@@ -1010,8 +1042,27 @@ function UI (visualizer) {
   this.vis = visualizer;
   this.lastStep = 1;
 
+  this.addToggleButton();
   this.addExecutionSlider();
 }
+
+UI.prototype.addToggleButton = function () {
+  // Add the toggle button for the graphical supplements
+
+  let vis = this.vis;
+
+  this.wrapperToggle = document.createElement('div');
+  this.wrapperToggle.classList.add('wrapperToggle', 'icon-right-dir');
+  this.wrapperToggle.addEventListener('click', function (e) {
+    e.target.classList.toggle('icon-right-dir');
+    e.target.classList.toggle('icon-left-dir');
+    vis.wrapper.classList.toggle('is-active');
+    vis.dataWrapper.classList.toggle('is-hidden');
+    vis.stateWrapper.classList.toggle('is-hidden');
+  });
+
+  this.vis.codeWrapper.querySelector('ol.linenums').firstElementChild.appendChild(this.wrapperToggle);
+};
 
 UI.prototype.addExecutionSlider = function () {
   this.execSlider = document.createElement('input');
