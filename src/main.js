@@ -724,32 +724,17 @@ function Visualizer (parser, walker, elem) {
 }
 
 Visualizer.prototype.markupWrapper = function () {
-  let self = this;
-
   this.wrapper = document.createElement('div');
   this.wrapper.classList.add('cluster');
 
   this.codeWrapper = document.createElement('div');
   this.codeWrapper.classList.add('code');
 
-  this.wrapperToggle = document.createElement('div');
-  this.wrapperToggle.textContent = 'Enhance';
-  this.wrapperToggle.classList.add('wrapperToggle', 'icon-right-dir');
-  this.wrapperToggle.addEventListener('click', function (e) {
-    e.target.classList.toggle('icon-right-dir');
-    e.target.classList.toggle('icon-left-dir');
-    self.wrapper.classList.toggle('is-active');
-    self.dataWrapper.classList.toggle('is-hidden');
-    self.stateWrapper.classList.toggle('is-hidden');
-  });
-
   this.dataWrapper = document.createElement('div');
   this.dataWrapper.classList.add('data', 'is-hidden');
 
   this.stateWrapper = document.createElement('div');
   this.stateWrapper.classList.add('state', 'is-hidden');
-
-  this.codeWrapper.appendChild(this.wrapperToggle);
 
   this.wrapper.appendChild(this.codeWrapper);
   this.wrapper.appendChild(this.dataWrapper);
@@ -760,6 +745,10 @@ Visualizer.prototype.markupWrapper = function () {
 };
 
 Visualizer.prototype.markupCode = function (codeStr) {
+  let self = this;
+
+  // Pretty print the beautified code (theme copied from Stack Overflow)
+
   let pre = document.createElement('pre');
   pre.classList.add('default', 'linenums', 'prettyprint');
 
@@ -770,8 +759,21 @@ Visualizer.prototype.markupCode = function (codeStr) {
 
   this.codeWrapper.appendChild(pre);
 
-  // Pretty print the beautified code (theme copied from Stack Overflow)
   prettyPrint();
+
+  // Add the toggle button for the graphical supplements
+
+  this.wrapperToggle = document.createElement('div');
+  this.wrapperToggle.classList.add('wrapperToggle', 'icon-right-dir');
+  this.wrapperToggle.addEventListener('click', function (e) {
+    e.target.classList.toggle('icon-right-dir');
+    e.target.classList.toggle('icon-left-dir');
+    self.wrapper.classList.toggle('is-active');
+    self.dataWrapper.classList.toggle('is-hidden');
+    self.stateWrapper.classList.toggle('is-hidden');
+  });
+
+  this.codeWrapper.querySelector('ol.linenums').firstElementChild.appendChild(this.wrapperToggle);
 };
 
 Visualizer.prototype.markupState = function () {
