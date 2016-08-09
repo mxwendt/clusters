@@ -768,7 +768,7 @@ Visualizer.prototype.markupCode = function (codeStr) {
 };
 
 Visualizer.prototype.calcWrapperWidths = function () {
-  this.setCodeWrapperW(this.calcCodeWrapperW() + 15);
+  this.setCodeWrapperW(this.calcCodeWrapperW());
   this.setDataWrapperW(this.calcDataWrapperW());
   this.setStateWrapperW(this.calcStateWrapperW());
 };
@@ -983,34 +983,33 @@ Visualizer.prototype.calcCodeWrapperW = function () {
 Visualizer.prototype.calcDataWrapperW = function () {
   if (this.codeWrapperW === undefined) this.codeWrapperW = this.calcCodeWrapperW();
 
-  let dataAndStateW = this.wrapper.clientWidth - this.codeWrapperW;
-  let percW = 0.5;
+  let dataAndStateW = this.wrapper.clientWidth - this.codeWrapperW - 18; // 18 = width of the two resizer handles
+  let dataW = dataAndStateW * 0.5;
 
-  return Math.floor(dataAndStateW * percW);
+  if (this.getW() < dataW) dataW = this.getW();
+
+  return Math.floor(dataW);
 };
 
 Visualizer.prototype.calcStateWrapperW = function () {
-  if (this.codeWrapperW === undefined) this.codeWrapperW = this.calcCodeWrapperW();
+  let stateW = this.wrapper.clientWidth - this.codeWrapperW - this.dataWrapperW - 18;
 
-  let dataAndStateW = this.wrapper.clientWidth - this.codeWrapperW;
-  let percW = 0.5;
-
-  return Math.floor(dataAndStateW * percW);
+  return Math.floor(stateW);
 };
 
 Visualizer.prototype.setCodeWrapperW = function (w) {
   this.codeWrapperW = w;
-  this.codeWrapper.style.maxWidth = this.codeWrapperW + 'px';
+  this.codeWrapper.style.width = this.codeWrapperW + 'px';
 };
 
 Visualizer.prototype.setDataWrapperW = function (w) {
   this.dataWrapperW = w;
-  this.dataWrapper.style.maxWidth = this.dataWrapperW + 'px';
+  this.dataWrapper.style.width = this.dataWrapperW + 'px';
 };
 
 Visualizer.prototype.setStateWrapperW = function (w) {
   this.stateWrapperW = w;
-  this.stateWrapper.style.maxWidth = this.stateWrapperW + 'px';
+  this.stateWrapper.style.width = this.stateWrapperW + 'px';
 };
 
 Visualizer.prototype.getLineCount = function () {
@@ -1021,12 +1020,16 @@ Visualizer.prototype.getWrapper = function () {
   return this.wrapper;
 };
 
+Visualizer.prototype.getCodeWrapper = function () {
+  return this.codeWrapper;
+};
+
 Visualizer.prototype.getDataWrapper = function () {
   return this.dataWrapper;
 };
 
-Visualizer.prototype.getCodeWrapper = function () {
-  return this.codeWrapper;
+Visualizer.prototype.getStateWrapper = function () {
+  return this.stateWrapper;
 };
 
 Visualizer.prototype.getExecution = function () {
@@ -1055,22 +1058,24 @@ function UI (visualizer) {
 
   this.addToggleButton();
   this.addExecutionSlider();
-  this.addResizeHandle();
+  this.addResizeHandles();
 }
 
 UI.prototype.addToggleButton = function () {
   // Add the toggle button for the graphical supplements
 
-  let vis = this.vis;
+  let self = this;
 
   this.wrapperToggle = document.createElement('div');
   this.wrapperToggle.classList.add('wrapperToggle', 'icon-right-dir');
   this.wrapperToggle.addEventListener('click', function (e) {
     e.target.classList.toggle('icon-right-dir');
     e.target.classList.toggle('icon-left-dir');
-    vis.wrapper.classList.toggle('is-active');
-    vis.dataWrapper.classList.toggle('is-hidden');
-    vis.stateWrapper.classList.toggle('is-hidden');
+    self.vis.wrapper.classList.toggle('is-active');
+    self.vis.dataWrapper.classList.toggle('is-hidden');
+    self.vis.stateWrapper.classList.toggle('is-hidden');
+    self.resizeHandleLeft.classList.toggle('is-hidden');
+    self.resizeHandleRight.classList.toggle('is-hidden');
   });
 
   this.vis.codeWrapper.querySelector('ol.linenums').firstElementChild.appendChild(this.wrapperToggle);
@@ -1106,42 +1111,166 @@ UI.prototype.addExecutionSlider = function () {
   this.addStateToggles();
 };
 
-UI.prototype.addResizeHandle = function () {
+UI.prototype.addResizeHandles = function () {
   let self = this;
 
-  this.resizeHandle = document.createElement('div');
-  this.resizeHandle.classList.add('resizeHandle');
+  // Left resize handle (between code and data)
 
-  this.isResizing = false;
+  this.isResizingLeft = false;
 
-  this.resizeHandle.addEventListener('mousedown', function (e) {
-    self.isResizing = true;
+  this.resizeHandleLeft = document.createElement('div');
+  this.resizeHandleLeft.classList.add('resize-handle', 'resize-handle--left', 'is-hidden');
+  this.resizeHandleLeft.style.height = this.vis.getH() + 20 + 'px';
+
+  this.resizeHandleLeft.addEventListener('mousedown', function (e) {
+    self.isResizingLeft = true;
+    self.vis.getWrapper().classList.add('is-resizing');
     self.lastDownX = e.clientX;
-    console.log("mousedown");
   });
 
-  this.vis.getWrapper().addEventListener('mousemove', function (e) {
-    if (! self.isResizing) return false; // return if we don't resize
+  document.addEventListener('mousemove', function (e) {
 
-    console.log("mousemove");
-  });
+    // return if we don't resize
+    if (! self.isResizingLeft) return false;
 
-  this.vis.getWrapper().addEventListener('mouseup', function (e) {
-    self.isResizing = false;
-    console.log("mouseup");
-  });
+    let wrapperElemW = self.vis.getWrapper().clientWidth;
+    let resizerLeftElemW = self.resizeHandleLeft.clientWidth;
+    let resizerRightElemW = self.resizeHandleRight.clientWidth;
+    let codeElemW = self.vis.getCodeWrapper().clientWidth;
+    let dataElemW = self.vis.getDataWrapper().clientWidth;
+    let stateElemW = self.vis.getStateWrapper().clientWidth;
+    let codeElemMinW = 20;
+    let dataElemMinW = 20;
+    let stateElemMinW = 20;
+    let codeElemMaxW = wrapperElemW - stateElemW - codeElemMinW;
+    let dataElemMaxW = self.vis.getW();
+    let stateElemMaxW = wrapperElemW - codeElemW - stateElemMinW;
 
-  // Hide the resize handle if all data is visible
+    let offset = e.clientX - self.lastDownX;
 
-  window.addEventListener('resize', function (e) {
-    if (self.vis.dataWrapperW >= self.vis.getW()) {
-      self.resizeHandle.classList.add('is-hidden');
-    } else {
-      self.resizeHandle.classList.remove('is-hidden');
+    if (offset < 0) {
+      // offset is negative, i.e. -5
+
+      // if mouse is not right off the left resize handle
+      if (e.clientX < self.resizeHandleLeft.offsetLeft + (resizerLeftElemW / 2)) {
+
+        if (codeElemW + offset < codeElemMinW) {
+          self.vis.setCodeWrapperW(codeElemMinW);
+          self.vis.setDataWrapperW(wrapperElemW - codeElemMinW - stateElemW - resizerLeftElemW - resizerRightElemW);
+        } else if (dataElemW - offset > dataElemMaxW) {
+          self.vis.setDataWrapperW(dataElemMaxW);
+          self.vis.setCodeWrapperW(wrapperElemW - dataElemMaxW - stateElemW - resizerLeftElemW - resizerRightElemW);
+        } else {
+          self.vis.setCodeWrapperW(codeElemW + offset);
+          self.vis.setDataWrapperW(dataElemW - offset);
+        }
+      }
     }
+
+    else if (offset > 0) {
+      // offset is positive, i.e. 5
+
+      // if mouse is not left off the left resize handle
+      if (e.clientX > self.resizeHandleLeft.offsetLeft + (resizerLeftElemW / 2)) {
+
+        if (dataElemW - offset < dataElemMinW) {
+          self.vis.setDataWrapperW(dataElemMinW);
+          self.vis.setCodeWrapperW(wrapperElemW - dataElemMinW - stateElemW - resizerLeftElemW - resizerRightElemW);
+        } else {
+          self.vis.setCodeWrapperW(codeElemW + offset);
+          self.vis.setDataWrapperW(dataElemW - offset);
+        }
+      }
+    }
+
+    self.lastDownX = e.clientX;
   });
 
-  this.vis.getDataWrapper().appendChild(this.resizeHandle);
+  document.addEventListener('mouseup', function (e) {
+    self.isResizingLeft = false;
+    self.vis.getWrapper().classList.remove('is-resizing');
+  });
+
+  this.vis.getWrapper().insertBefore(this.resizeHandleLeft, this.vis.getDataWrapper());
+
+  // Right resize handle (between data and state)
+
+  this.isResizingRight = false;
+
+  this.resizeHandleRight = document.createElement('div');
+  this.resizeHandleRight.classList.add('resize-handle', 'resize-handle--right', 'is-hidden');
+  this.resizeHandleRight.style.height = this.vis.getH() + 20 + 'px';
+
+  this.resizeHandleRight.addEventListener('mousedown', function (e) {
+    self.isResizingRight = true;
+    self.vis.getWrapper().classList.add('is-resizing');
+    self.lastDownX = e.clientX;
+  });
+
+  document.addEventListener('mousemove', function (e) {
+
+    // return if we don't resize
+    if (! self.isResizingRight) return false;
+
+    let wrapperElemW = self.vis.getWrapper().clientWidth;
+    let resizerLeftElemW = self.resizeHandleLeft.clientWidth;
+    let resizerRightElemW = self.resizeHandleRight.clientWidth;
+    let codeElemW = self.vis.getCodeWrapper().clientWidth;
+    let dataElemW = self.vis.getDataWrapper().clientWidth;
+    let stateElemW = self.vis.getStateWrapper().clientWidth;
+    let codeElemMinW = 20;
+    let dataElemMinW = 20;
+    let stateElemMinW = 20;
+    let codeElemMaxW = wrapperElemW - stateElemW - codeElemMinW;
+    let dataElemMaxW = self.vis.getW();
+    let stateElemMaxW = wrapperElemW - codeElemW - stateElemMinW;
+
+    let offset = e.clientX - self.lastDownX;
+
+    if (offset < 0) {
+      // offset is negative, i.e. -5
+
+      // if mouse is not right off the left resize handle
+      if (e.clientX < self.resizeHandleRight.offsetLeft + (resizerRightElemW / 2)) {
+
+        if (dataElemW + offset < dataElemMinW) {
+          self.vis.setDataWrapperW(dataElemMinW);
+          self.vis.setStateWrapperW(wrapperElemW - dataElemMinW - codeElemW - resizerLeftElemW - resizerRightElemW);
+        } else {
+          self.vis.setDataWrapperW(dataElemW + offset);
+          self.vis.setStateWrapperW(stateElemW - offset);
+        }
+      }
+    }
+
+    else if (offset > 0) {
+      // offset is positive, i.e. 5
+
+      // if mouse is not left off the left resize handle
+      if (e.clientX > self.resizeHandleRight.offsetLeft + (resizerRightElemW / 2)) {
+
+        if (stateElemW - offset < stateElemMinW) {
+          self.vis.setStateWrapperW(stateElemMinW);
+          self.vis.setDataWrapperW(wrapperElemW - stateElemMinW - codeElemW - resizerLeftElemW - resizerRightElemW);
+        } else if (dataElemW + offset > dataElemMaxW) {
+          self.vis.setDataWrapperW(dataElemMaxW);
+          self.vis.setStateWrapperW(wrapperElemW - dataElemMaxW - codeElemW - resizerLeftElemW - resizerRightElemW);
+        } else {
+          self.vis.setStateWrapperW(stateElemW - offset);
+          self.vis.setDataWrapperW(dataElemW + offset);
+        }
+      }
+    }
+
+    self.lastDownX = e.clientX;
+  });
+
+  document.addEventListener('mouseup', function (e) {
+    self.isResizingRight = false;
+    self.vis.getWrapper().classList.remove('is-resizing');
+  });
+
+  this.vis.getWrapper().insertBefore(this.resizeHandleRight, this.vis.getStateWrapper());
 };
 
 UI.prototype.highlightLine = function () {

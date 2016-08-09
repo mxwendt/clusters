@@ -43,10 +43,18 @@ Wrapper
   margin-bottom: 50px;
 }
 
-.cluster.is-active .code,
-.cluster.is-active .data,
-.cluster.is-active .state {
-  max-width: 33%;
+.data {
+  left: -9px;
+}
+
+.cluster.is-resizing {
+  /* Disable selection so it doesn't get annoying */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: moz-none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 /*TODO: Rename to gfxToggle */
@@ -64,17 +72,16 @@ Wrapper
   color: rgb(236, 94, 93);
 }
 
-.resizeHandle {
+.resize-handle {
   display: block;
   width: 9px;
-  height: 100%;
-  position: absolute;
-  top: 0;
+  position: relative;
+  float: left;
   cursor: col-resize;
   z-index: 1;
 }
 
-.resizeHandle:after {
+.resize-handle:after {
   content: '';
   display: block;
   width: 1px;
@@ -83,8 +90,12 @@ Wrapper
   background-color: rgb(208, 208, 208);
 }
 
-.state {
-  padding-left: 10px;
+.resize-handle.resize-handle--left {
+  left: -5px;
+}
+
+.resize-handle.resize-handle--right {
+  left: -13px;
 }
 
 /*------------------------------------------------------------------------------
