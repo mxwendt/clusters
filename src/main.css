@@ -4,6 +4,7 @@ Settings
 
 html {
   box-sizing: border-box;
+  overflow-y: scroll;
 }
 
 *, *:before, *:after {
