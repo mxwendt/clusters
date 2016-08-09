@@ -1380,6 +1380,19 @@ function matrixToArray(str) {
   return str.match(/(-?[0-9\.]+)/g);
 }
 
+function getScrollbarWidth() {
+  let scrollDiv = document.createElement('div');
+  scrollDiv.style.cssText = 'width: 100px; height: 100px; overflow: scroll !important; position: absolute; top: -9999px';
+
+  document.body.appendChild(scrollDiv);
+
+  let result = scrollDiv.offsetWidth - scrollDiv.clientWidth;
+
+  document.body.removeChild(scrollDiv);
+
+  return result;
+}
+
 //! INIT .......................................................................
 
 // Get the code as a string
