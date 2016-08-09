@@ -1147,6 +1147,7 @@ UI.prototype.addResizeHandles = function () {
     let stateElemMaxW = wrapperElemW - codeElemW - stateElemMinW;
 
     let offset = e.clientX - self.lastDownX;
+    let extraOffset = 0;
 
     if (offset < 0) {
       // offset is negative, i.e. -5
@@ -1156,10 +1157,12 @@ UI.prototype.addResizeHandles = function () {
 
         if (codeElemW + offset < codeElemMinW) {
           self.vis.setCodeWrapperW(codeElemMinW);
-          self.vis.setDataWrapperW(wrapperElemW - codeElemMinW - stateElemW - resizerLeftElemW - resizerRightElemW);
+          self.vis.setStateWrapperW(wrapperElemW - codeElemW - dataElemW - resizerLeftElemW - resizerRightElemW);
         } else if (dataElemW - offset > dataElemMaxW) {
+          extraOffset = dataElemMaxW - (dataElemW - offset);
+          self.vis.setCodeWrapperW(codeElemW + extraOffset);
           self.vis.setDataWrapperW(dataElemMaxW);
-          self.vis.setCodeWrapperW(wrapperElemW - dataElemMaxW - stateElemW - resizerLeftElemW - resizerRightElemW);
+          self.vis.setStateWrapperW(wrapperElemW - codeElemW - dataElemW - resizerLeftElemW - resizerRightElemW);
         } else {
           self.vis.setCodeWrapperW(codeElemW + offset);
           self.vis.setDataWrapperW(dataElemW - offset);
@@ -1175,7 +1178,7 @@ UI.prototype.addResizeHandles = function () {
 
         if (dataElemW - offset < dataElemMinW) {
           self.vis.setDataWrapperW(dataElemMinW);
-          self.vis.setCodeWrapperW(wrapperElemW - dataElemMinW - stateElemW - resizerLeftElemW - resizerRightElemW);
+          self.vis.setCodeWrapperW(wrapperElemW - dataElemW - stateElemW - resizerLeftElemW - resizerRightElemW);
         } else {
           self.vis.setCodeWrapperW(codeElemW + offset);
           self.vis.setDataWrapperW(dataElemW - offset);
@@ -1226,6 +1229,7 @@ UI.prototype.addResizeHandles = function () {
     let stateElemMaxW = wrapperElemW - codeElemW - stateElemMinW;
 
     let offset = e.clientX - self.lastDownX;
+    let extraOffset = 0;
 
     if (offset < 0) {
       // offset is negative, i.e. -5
@@ -1251,10 +1255,15 @@ UI.prototype.addResizeHandles = function () {
 
         if (stateElemW - offset < stateElemMinW) {
           self.vis.setStateWrapperW(stateElemMinW);
-          self.vis.setDataWrapperW(wrapperElemW - stateElemMinW - codeElemW - resizerLeftElemW - resizerRightElemW);
+          self.vis.setCodeWrapperW(wrapperElemW - dataElemW - stateElemW - resizerLeftElemW - resizerRightElemW);
         } else if (dataElemW + offset > dataElemMaxW) {
+          extraOffset = dataElemMaxW - (dataElemW + offset);
+          self.vis.setStateWrapperW(stateElemW + extraOffset);
           self.vis.setDataWrapperW(dataElemMaxW);
-          self.vis.setStateWrapperW(wrapperElemW - dataElemMaxW - codeElemW - resizerLeftElemW - resizerRightElemW);
+          self.vis.setCodeWrapperW(wrapperElemW - dataElemW - stateElemW - resizerLeftElemW - resizerRightElemW);
+
+          // self.vis.setDataWrapperW(dataElemMaxW);
+          // self.vis.setStateWrapperW(wrapperElemW - dataElemMaxW - codeElemW - resizerLeftElemW - resizerRightElemW);
         } else {
           self.vis.setStateWrapperW(stateElemW - offset);
           self.vis.setDataWrapperW(dataElemW + offset);
