@@ -1380,6 +1380,10 @@ function matrixToArray(str) {
   return str.match(/(-?[0-9\.]+)/g);
 }
 
+function hasScrollbars(element) {
+  return element.scrollHeight > element.clientHeight;
+}
+
 function getScrollbarWidth() {
   let scrollDiv = document.createElement('div');
   scrollDiv.style.cssText = 'width: 100px; height: 100px; overflow: scroll !important; position: absolute; top: -9999px';
