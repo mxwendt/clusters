@@ -47,6 +47,10 @@ Wrapper
   left: -9px;
 }
 
+.state {
+  left: -18px;
+}
+
 .cluster.is-resizing {
   /* Disable selection so it doesn't get annoying */
   -webkit-touch-callout: none;
