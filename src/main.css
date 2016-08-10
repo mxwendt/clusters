@@ -48,6 +48,7 @@ Wrapper
 }
 
 .state {
+  padding-left: 10px;
   left: -18px;
 }
 
@@ -376,14 +377,18 @@ State
   border-bottom: none;
 }
 
-.stateLabel {
-  font-size: 11px;
+.stateLabel, .stateLabel.stateToggle {
+  font-size: 12px;
+}
+
+.stateLabel .kwd {
+  font-family: monospace;
+  font-weight: bold;
 }
 
 .stateVal {
-  display: block;
+  display: inline-block;
   margin-left: 10px;
-  font-weight: bold;
   vertical-align: top;
 }
 
