@@ -1,13 +1,13 @@
 <!doctype html>
 <html>
-<head>
-  <title>Walker</title>
-  <meta charset='utf-8'>
-  <link rel="stylesheet" href="../node_modules/google-code-prettify/bin/prettify.min.css">
-  <link rel="stylesheet" href="../src/main.css">
-  <link rel="stylesheet" href="../assets/fontello-84aa1d62/css/fontello.css">
-</head>
-<body>
+  <head>
+    <title>Walker</title>
+    <meta charset='utf-8'>
+    <link rel="stylesheet" href="../lib/google-code-prettify/prettify.min.css">
+    <link rel="stylesheet" href="../src/main.css">
+    <link rel="stylesheet" href="../assets/fontello-84aa1d62/css/fontello.css">
+  </head>
+  <body>
     <pre class="default linenums prettyprint">
 var plan = [
     '#####',
@@ -17,18 +17,15 @@ var plan = [
     '#####'
 ];
     </pre>
-
     <pre class="default linenums prettyprint">
 function Wall() {}
     </pre>
-
     <pre class="default linenums prettyprint">
 var world = new World(plan, {
     '#': Wall,
     'o': BouncingCritter
 });
     </pre>
-
     <pre class="default linenums prettyprint">
 var directions = {
     'n': new Vector(0, -1),
@@ -41,7 +38,6 @@ var directions = {
     'nw': new Vector(-1, -1)
 };
     </pre>
-
     <div class="snippet">
         <pre>
             /**
@@ -55,7 +51,6 @@ var directions = {
             };
         </pre>
     </div>
-
     <div class="snippet">
         <pre>
             /**
@@ -74,7 +69,6 @@ var directions = {
             }
         </pre>
     </div>
-
     <div class="snippet">
         <pre>
             /**
@@ -95,7 +89,6 @@ var directions = {
             }
         </pre>
     </div>
-
     <div class="snippet">
         <pre>
             /**
@@ -114,7 +107,6 @@ var directions = {
             };
         </pre>
     </div>
-
     <div class="snippet">
         <pre>
             /**
@@ -132,7 +124,6 @@ var directions = {
             }
         </pre>
     </div>
-
     <div class="snippet">
         <pre>
             /**
@@ -153,14 +144,12 @@ var directions = {
             }
         </pre>
     </div>
-
-    <script type="text/javascript" src="../node_modules/js-beautify/js/lib/beautify.js" charset="utf-8"></script>
-    <script type="text/javascript" src="../node_modules/js-beautify/js/lib/beautify.js" charset="utf-8"></script>
-    <script type="text/javascript" src="../node_modules/google-code-prettify/bin/prettify.min.js" charset="utf-8"></script>
-    <script type="text/javascript" src="../node_modules/acorn/dist/acorn.js" charset="utf-8"></script>
-    <script type="text/javascript" src="../node_modules/acorn/dist/walk.js" charset="utf-8"></script>
-    <script type="text/javascript" src="../node_modules/d3/d3.js" charset="utf-8"></script>
+    <script type="text/javascript" src="../lib/js-beautify/beautify.js" charset="utf-8"></script>
+    <script type="text/javascript" src="../lib/google-code-prettify/prettify.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="../lib/acorn/acorn.js" charset="utf-8"></script>
+    <script type="text/javascript" src="../lib/acorn/walk.js" charset="utf-8"></script>
+    <script type="text/javascript" src="../lib/d3/d3.js" charset="utf-8"></script>
     <script type="text/javascript" src="../lib/ractive.js" charset="utf-8"></script>
     <script type="text/javascript" src="../src/main.js" charset="utf-8"></script>
-</body>
+  </body>
 </html>
