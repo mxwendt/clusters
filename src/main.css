@@ -368,41 +368,19 @@ State
 .stateValues {
   padding-top: 5px;
   padding-bottom: 5px;
-  border-top: 1px solid black;
-}
-
-.stateParams:last-child,
-.stateValues:last-child,
-.stateReturns:last-child {
-  border-bottom: none;
-}
-
-.stateLabel, .stateLabel.stateToggle {
-  font-size: 12px;
 }
 
 .stateLabel .kwd {
+  float: left;
   font-family: monospace;
-  font-weight: bold;
 }
 
 .stateVal {
-  display: inline-block;
+  display: inline;
   margin-left: 10px;
   vertical-align: top;
 }
 
 .stateVal.is-last-updated {
-  color: rgb(236, 94, 93);
-}
-
-.stateToggle {
-  font-family: monospace;
-  font-size: 11px;
-  line-height: 16px;
-}
-
-.stateToggle:hover {
-  cursor: pointer;
   color: rgb(236, 94, 93);
 }
