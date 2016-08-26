@@ -1,16 +1,55 @@
 <!doctype html>
 <html>
-<head>
-  <title>Walker</title>
-  <meta charset='utf-8'>
-  <link rel="stylesheet" href="src/main.css">
-  <link rel="stylesheet" href="assets/fontello-84aa1d62/css/fontello.css">
-</head>
-<body>
-  <ul>
-    <li><a href="examples/fibonacci.html">Fibonacci</a></li>
-    <li><a href="examples/ini-parser.html">INI Parser</a></li>
-    <li><a href="examples/elife.html">E-Life</a></li>
-  </ul>
-</body>
+  <head>
+    <title>Walker</title>
+    <meta charset='utf-8'>
+    <link rel="stylesheet" href="src/main.css">
+    <link rel="stylesheet" href="assets/fontello-84aa1d62/css/fontello.css">
+  </head>
+  <body class="home">
+    <main>
+      <h1>Clusters</h1>
+      <form id="code-input" action="/" accept-charset="UTF-8" method="post">
+        <textarea id="code-textarea" name="code-textarea" rows="8" cols="40" wrap="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Add code here..."></textarea>
+        <button id="code-submit" type="submit">Add code snippet</button>
+      </form>
+      <h2 id="examples">Examples</h2>
+      <ul>
+        <li><a href="examples/fibonacci.html">Fibonacci</a></li>
+        <li><a href="examples/ini-parser.html">INI Parser</a></li>
+        <li><a href="examples/elife.html">E-Life</a></li>
+      </ul>
+    </main>
+    <script type="text/javascript" src="lib/js-beautify/beautify.js" charset="utf-8"></script>
+    <script type="text/javascript" src="lib/google-code-prettify/prettify.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="lib/acorn/acorn.js" charset="utf-8"></script>
+    <script type="text/javascript" src="lib/acorn/walk.js" charset="utf-8"></script>
+    <script type="text/javascript" src="lib/d3/d3.js" charset="utf-8"></script>
+    <script type="text/javascript" src="lib/ractive.js" charset="utf-8"></script>
+    <script type="text/javascript" src="src/main.js" charset="utf-8"></script>
+    <script type="text/javascript">
+      window.onload = function () {
+        document.getElementById('code-input').addEventListener('submit', function (e) {
+          e.preventDefault();
+
+          let codeText = document.getElementsByName('code-textarea')[0].value;
+
+          if (codeText === '') return false;
+
+          let snippetElem = document.createElement('div');
+          snippetElem.classList.add('snippet');
+
+          let preElem = document.createElement('pre');
+          preElem.textContent = codeText;
+
+          snippetElem.appendChild(preElem);
+
+          document.querySelector('main').insertBefore(snippetElem, document.querySelector('#examples'));
+
+          let parser = new Parser(preElem.textContent);
+          let walker = new Walker(parser, snippetElem);
+        });
+      };
+    </script>
+  </body>
 </html>
