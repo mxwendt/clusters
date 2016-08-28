@@ -4,9 +4,9 @@
 What do they look like? The state. The execution. The behavior. I kept dreaming
 of a world I thought I’d never see. And then, one day … I visualized it.“
 
-http://lisperator.net/pltut/
-http://eloquentjavascript.net/11_language.html
-http://www.compilers.iecc.com/crenshaw/
+* http://lisperator.net/pltut/
+* http://eloquentjavascript.net/11_language.html
+* http://www.compilers.iecc.com/crenshaw/
 
 # Setup workspace
 
@@ -127,35 +127,35 @@ function fubar(foo) {}
 function fubar(foo) {}
 ```
 
-Dot notation, bracket notation and nested notation gets handled independent of parameter type. It extends the existing 
+Dot notation, bracket notation and nested notation gets handled independent of parameter type. It extends the existing
 parameter. Can be nested multiple times.
 
 ```javascript
 /**
  * i.e. dot notation, one level, all types:
- * 
+ *
  * @param {Boolean} foo.thud = true
  * @param {Number} foo.bar = 8, 0, 10
  * @param {String} foo.baz = ”blah-blah“
  * @param {Array} foo.qux = [0, 1, 2, 3, 4, 5]
  * @param {Object} foo.ysr = {}
- * 
+ *
  * i.e. dot notation, multiple levels:
- * 
+ *
  * @param {Boolean} foo.thud.bar.baz = true
- * 
+ *
  * i.e. bracket notation, one level:
- * 
+ *
  * @param {Boolean} foo['thud'] = true
  * @param {Boolean} foo["thud"] = true
- * 
+ *
  * i.e. bracket notation, multiple levels:
- * 
+ *
  * @param {Boolean} foo['thud']['bar']['baz‘] = true
  * @param {Boolean} foo["thud"]["bar"]["baz"] = true
- * 
+ *
  * i.e. dot and bracket notation, multiple levels:
- * 
+ *
  * @param {Boolean} foo['thud'].bar.baz = true
  * @param {Boolean} foo.thud["bar"]["baz"] = true
  */

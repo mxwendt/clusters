@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+  <title>Walker</title>
+  <meta charset='utf-8'>
+  <link rel="stylesheet" href="../node_modules/google-code-prettify/bin/prettify.min.css">
+  <link rel="stylesheet" href="../src/main.css">
+  <link rel="stylesheet" href="../assets/fontello-84aa1d62/css/fontello.css">
+</head>
+<body>
+    <div class="snippet">
+      <pre>
+        /**
+         * @cluster
+         *
+         * @param {Number} n = 5, 2, 10
+         */
+        function fibo(n) {
+            var resultsArray = [];
+
+            for (var i = 0; i <= n; i++) {
+                if (i === 0) {
+                    resultsArray.push(0);
+                } else if (i === 1) {
+                    resultsArray.push(1);
+                } else {
+                    resultsArray.push(resultsArray[i - 2] + resultsArray[i - 1]);
+                }
+            }
+
+            return resultsArray[n];
+        }
+      </pre>
+    </div>
+  <script type="text/javascript" src="../node_modules/js-beautify/js/lib/beautify.js" charset="utf-8"></script>
+  <script type="text/javascript" src="../node_modules/js-beautify/js/lib/beautify.js" charset="utf-8"></script>
+  <script type="text/javascript" src="../node_modules/google-code-prettify/bin/prettify.min.js" charset="utf-8"></script>
+  <script type="text/javascript" src="../node_modules/acorn/dist/acorn.js" charset="utf-8"></script>
+  <script type="text/javascript" src="../node_modules/acorn/dist/walk.js" charset="utf-8"></script>
+  <script type="text/javascript" src="../node_modules/d3/d3.js" charset="utf-8"></script>
+  <script type="text/javascript" src="../lib/ractive.js" charset="utf-8"></script>
+  <script type="text/javascript" src="../src/main.js" charset="utf-8"></script>
+</body>
+</html>
