@@ -367,7 +367,7 @@ State
 .stateValues {
   padding-top: 5px;
   padding-bottom: 5px;
-  border-top: 1px solid black;
+  /*border-bottom: 1px solid black;*/
 }
 
 .stateParams:last-child,
@@ -381,10 +381,14 @@ State
 }
 
 .stateVal {
-  display: block;
+  display: inline-block;
   margin-left: 10px;
   font-weight: bold;
   vertical-align: top;
+}
+
+.stateVal.pln {
+  display: block;
 }
 
 .stateVal.is-last-updated {
