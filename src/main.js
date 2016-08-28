@@ -884,13 +884,13 @@ Visualizer.prototype.markupState = function () {
     data: {
       state: self.ractiveData,
       raw: function (val) {
-        if (val !== undefined) return '= ' + val;
+        if (val !== undefined) return val;
       },
       beautify: function (val) {
-        if (val !== undefined) return '= ' + self.parser.beautify(val);
+        if (val !== undefined) return self.parser.beautify(val);
       },
       pure: function (val) {
-        if (val !== undefined && typeof(val) === 'string') return '= ' + val.substring(1, val.length - 1);
+        if (val !== undefined && typeof(val) === 'string') return val.substring(1, val.length - 1);
       }
     }
   });
