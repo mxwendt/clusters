@@ -422,10 +422,7 @@ State
   display: inline;
   margin-left: 10px;
   vertical-align: top;
-}
-
-.stateVal.pln {
-  display: block;
+  font-weight: bold;
 }
 
 .stateVal.is-last-updated {
