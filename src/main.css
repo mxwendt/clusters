@@ -422,6 +422,7 @@ State
   display: inline;
   margin-left: 10px;
   vertical-align: top;
+  font-weight: bold;
 }
 
 .stateVal.is-last-updated {
