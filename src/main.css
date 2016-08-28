@@ -425,6 +425,10 @@ State
   font-weight: bold;
 }
 
+.stateVal.pln {
+  display: block;
+}
+
 .stateVal.is-last-updated {
   color: rgb(236, 94, 93);
 }

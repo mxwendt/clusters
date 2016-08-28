@@ -781,36 +781,34 @@ Visualizer.prototype.markupState = function () {
   let paramsTemplate = '<ol class="stateParams">';
   let valuesTemplate = '<ol class="stateValues">';
 
-  console.log(this.env.vars);
-
   for (let name in this.env.vars) {
     if (this.env.vars[name].properties !== undefined) {
       // parameter value
       if (this.env.vars[name].properties.type === 'Boolean') {
         // TODO: Evaluate if checked or not
         paramsTemplate += '<li>';
-        paramsTemplate += '<span class="stateLabel stateToggle icon-down-dir">uses <span class="com">' + this.env.vars[name].properties.name + '</span>';
+        paramsTemplate += '<span class="stateLabel">uses <span class="com">' + this.env.vars[name].properties.name + '</span>';
         paramsTemplate += '<input type="checkbox" checked="checked" value="{{state.params.' + this.env.vars[name].properties.name + '.val}}"></span>';
-        paramsTemplate += '<span class="stateVal kwd">{{{ beautify(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
+        paramsTemplate += '<span class="stateVal kwd">{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
         paramsTemplate += '</li>';
       } else if (this.env.vars[name].properties.type === 'Number') {
         paramsTemplate += '<li>';
-        paramsTemplate += '<span class="stateLabel stateToggle icon-down-dir">uses <span class="com">' + this.env.vars[name].properties.name + '</span>';
+        paramsTemplate += '<span class="stateLabel">uses <span class="com">' + this.env.vars[name].properties.name + '</span>';
         paramsTemplate += '<input type="range" min="' + this.env.vars[name].properties.min + '" max="' + this.env.vars[name].properties.max + '" value="{{state.params.' + this.env.vars[name].properties.name + '.val}}"></span>';
-        paramsTemplate += '<span class="stateVal lit">{{{ beautify(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
+        paramsTemplate += '<span class="stateVal lit">{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
         paramsTemplate += '</li>';
       } else if (this.env.vars[name].properties.type === 'String') {
         paramsTemplate += '<li>';
-        paramsTemplate += '<span class="stateLabel stateToggle icon-down-dir">uses <span class="com">' + this.env.vars[name].properties.name + '</span>';
+        paramsTemplate += '<span class="stateLabel">uses <span class="com">' + this.env.vars[name].properties.name + '</span>';
         paramsTemplate += '<select>';
         paramsTemplate += '<option value="{{ pure(state.params.' + this.env.vars[name].properties.name + '.val) }}" selected>Option 1</option>';
         paramsTemplate += '</select></span>';
-        paramsTemplate += '<span class="stateVal str">{{{ beautify(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
+        paramsTemplate += '<span class="stateVal str">{{{ raw(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
         paramsTemplate += '</li>';
       } else if (this.env.vars[name].properties.type === 'Array') {
         // TODO: Create inputs for array parameter => select
         paramsTemplate += '<li>';
-        paramsTemplate += '<span class="stateLabel stateToggle icon-down-dir">uses <span class="com">' + this.env.vars[name].properties.name + '</span>';
+        paramsTemplate += '<span class="stateLabel">uses <span class="com">' + this.env.vars[name].properties.name + '</span>';
         paramsTemplate += '<select>';
         paramsTemplate += '<option value="{{ pure(state.params.' + this.env.vars[name].properties.name + '.val) }}" selected>Option 1</option>';
         paramsTemplate += '</select></span>';
@@ -819,34 +817,34 @@ Visualizer.prototype.markupState = function () {
       } else if (this.env.vars[name].properties.type === 'Object') {
         // TODO: Create inputs for object parameter => depending on primitive type
         paramsTemplate += '<li>';
-        paramsTemplate += '<span class="stateLabel stateToggle icon-down-dir">uses <span class="com">' + this.env.vars[name].properties.name + '</span></span>';
+        paramsTemplate += '<span class="stateLabel">uses <span class="com">' + this.env.vars[name].properties.name + '</span></span>';
         paramsTemplate += '<span class="stateVal pln">{{{ beautify(state.params.' + this.env.vars[name].properties.name + '.val) }}}</span>';
         paramsTemplate += '</li>';
       }
     } else {
       if (Object.prototype.toString.call(this.env.vars[name].value) === '[object Boolean]') {
         valuesTemplate += '<li>';
-        valuesTemplate += '<span class="stateLabel stateToggle icon-down-dir">sets <span class="kwd">' + name + '</span> to</span>';
+        valuesTemplate += '<span class="stateLabel">sets <span class="kwd">' + name + '</span> to</span>';
         valuesTemplate += '<span class="stateVal kwd">{{{ raw(state.values.' + name + '.val) }}}</span>';
         valuesTemplate += '</li>';
       } else if (Object.prototype.toString.call(this.env.vars[name].value) === '[object Number]') {
         valuesTemplate += '<li>';
-        valuesTemplate += '<span class="stateLabel stateToggle icon-down-dir">sets <span class="lit">' + name + '</span> to</span>';
+        valuesTemplate += '<span class="stateLabel">sets <span class="lit">' + name + '</span> to</span>';
         valuesTemplate += '<span class="stateVal lit">{{{ raw(state.values.' + name + '.val) }}}</span>';
         valuesTemplate += '</li>';
       } else if (Object.prototype.toString.call(this.env.vars[name].value) === '[object String]') {
         valuesTemplate += '<li>';
-        valuesTemplate += '<span class="stateLabel stateToggle icon-down-dir">sets <span class="str">' + name + '</span> to</span>';
+        valuesTemplate += '<span class="stateLabel">sets <span class="str">' + name + '</span> to</span>';
         valuesTemplate += '<span class="stateVal str">{{{ raw(state.values.' + name + '.val) }}}</span>';
         valuesTemplate += '</li>';
       } else if (Object.prototype.toString.call(this.env.vars[name].value) === '[object Array]') {
         valuesTemplate += '<li>';
-        valuesTemplate += '<span class="stateLabel stateToggle icon-down-dir">sets <span class="pln">' + name + '</span> to</span>';
-        valuesTemplate += '<span class="stateVal pln">{{{ raw(state.values.' + name + '.val) }}}</span>';
+        valuesTemplate += '<span class="stateLabel">sets <span class="pln">' + name + '</span> to</span>';
+        valuesTemplate += '<span class="stateVal pln">{{{ beautify(state.values.' + name + '.val) }}}</span>';
         valuesTemplate += '</li>';
       } else if (Object.prototype.toString.call(this.env.vars[name].value) === '[object Object]') {
         valuesTemplate += '<li>';
-        valuesTemplate += '<span class="stateLabel stateToggle icon-down-dir">sets <span class="pln">' + name + '</span> to</span>';
+        valuesTemplate += '<span class="stateLabel">sets <span class="pln">' + name + '</span> to</span>';
         valuesTemplate += '<span class="stateVal pln">{{{ beautify(state.values.' + name + '.val) }}}</span>';
         valuesTemplate += '</li>';
       }
